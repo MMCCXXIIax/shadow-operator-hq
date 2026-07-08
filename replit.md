@@ -4,7 +4,7 @@ A unified CRM combining Instagram creator-outreach tracking with sales-pipeline 
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
 - `pnpm --filter @workspace/lead-tracker run dev` — run the frontend (Vite, port assigned by env)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
