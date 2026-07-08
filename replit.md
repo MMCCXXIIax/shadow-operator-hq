@@ -30,6 +30,8 @@ A unified CRM combining Instagram creator-outreach tracking with sales-pipeline 
 - `artifacts/lead-tracker/src/` — React frontend (Dashboard, Leads table, Lead detail, New lead form)
 - `lib/api-client-react/src/generated/` — generated React Query hooks
 - `lib/api-zod/src/generated/` — generated Zod validation schemas
+- `docs/DESIGN_SYSTEM.md` — authoritative design reference (colors, type, philosophy, workflow order)
+- `FRONTEND_UI_PLAYBOOK.md` — full frontend process/philosophy detail
 
 ## Architecture decisions
 
@@ -59,3 +61,4 @@ _Populate as you build — explicit user instructions worth remembering across s
 ## Pointers
 
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Before building any new screen or UI, read `docs/DESIGN_SYSTEM.md` — it's the merged design reference (palette, typography, philosophy) and points to the full playbook for process detail. Follow the spec → codegen → UI workflow order it documents.
