@@ -10,7 +10,7 @@ import {
   Search,
   BarChart3,
   ShieldCheck,
-  Instagram,
+  CalendarClock,
   ArrowRight,
   CheckCircle2,
 } from "lucide-react";
@@ -19,22 +19,22 @@ type Mode = "signin" | "signup";
 
 const FEATURES = [
   {
-    icon: Instagram,
-    title: "38 Curated Creator Leads",
+    icon: CalendarClock,
+    title: "Automated Follow-Up Schedule",
     description:
-      "Pre-loaded with vetted Instagram creators across 15 niches — fitness, beauty, finance, gaming, and more.",
+      "Every new lead gets 5 follow-ups scheduled automatically — day 0, 3, 7, 11, and 14. Never lose track of who's due.",
   },
   {
     icon: BarChart3,
     title: "Full Outreach Pipeline",
     description:
-      "Track every lead from cold to closed. DM status, responses, calls booked, and priority scores — all in one view.",
+      "Track every lead from cold to closed. DM status, sales pipeline stage, calls booked, and priority scores — all in one view.",
   },
   {
     icon: Search,
     title: "Instant Filter & Search",
     description:
-      "Find any lead in seconds. Filter by niche, DM status, priority score, or call booked status.",
+      "Find any lead in seconds. Filter by niche, DM status, pipeline stage, priority score, or call booked status.",
   },
   {
     icon: ShieldCheck,
@@ -45,8 +45,8 @@ const FEATURES = [
 ];
 
 const STATS = [
-  { value: "38+", label: "Creator leads" },
-  { value: "15", label: "Niches" },
+  { value: "5", label: "Auto follow-ups per lead" },
+  { value: "0/3/7/11/14", label: "Day schedule" },
   { value: "1–10", label: "Priority scoring" },
   { value: "100%", label: "Your data only" },
 ];
@@ -120,14 +120,14 @@ export default function Landing({
           <div className="size-8 bg-primary rounded-md flex items-center justify-center shadow-sm">
             <div className="size-3 bg-background rounded-full" />
           </div>
-          AI Shadow
+          Shadow Operator HQ
         </div>
 
         {/* Hero */}
         <div className="flex-1 flex flex-col justify-center px-10 py-12 max-w-xl">
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-semibold px-3 py-1.5 rounded-full mb-6 w-fit border border-primary/20">
             <CheckCircle2 className="size-3.5" />
-            Built for AI Shadow operators
+            Built for operators
           </div>
 
           <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] mb-5 text-foreground">
@@ -137,8 +137,8 @@ export default function Landing({
           </h1>
 
           <p className="text-muted-foreground text-lg leading-relaxed mb-10">
-            The CRM purpose-built for AI Shadow. Manage your Instagram creator
-            outreach, monitor your pipeline health, and never lose track of a
+            The unified CRM for creator outreach and sales pipeline. Manage
+            your leads, automate your follow-ups, and never lose track of a
             warm lead again.
           </p>
 
@@ -187,7 +187,7 @@ export default function Landing({
           <div className="size-8 bg-primary rounded-md flex items-center justify-center shadow-sm">
             <div className="size-3 bg-background rounded-full" />
           </div>
-          AI Shadow
+          Shadow Operator HQ
         </div>
 
         <div className="w-full max-w-sm mx-auto">

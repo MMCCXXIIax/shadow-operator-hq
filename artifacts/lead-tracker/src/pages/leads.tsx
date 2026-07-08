@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -21,21 +21,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+
+const PIPELINE_STATUSES = ["new", "contacted", "qualified", "proposal", "won", "lost"] as const;
 
 export default function Leads() {
   const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
+  const [dmStatusFilter, setDmStatusFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [nicheFilter, setNicheFilter] = useState("all");
 
   const queryParams: any = {};
   if (search) queryParams.search = search;
-  if (statusFilter !== "all") queryParams.dmStatus = statusFilter;
+  if (dmStatusFilter !== "all") queryParams.dmStatus = dmStatusFilter;
+  if (statusFilter !== "all") queryParams.status = statusFilter;
   if (nicheFilter !== "all") queryParams.niche = nicheFilter;
 
-  const { data: leads, isLoading } = useListLeads(queryParams, { 
-    query: { queryKey: getListLeadsQueryKey(queryParams) } 
+  const { data: leads, isLoading } = useListLeads(queryParams, {
+    query: { queryKey: getListLeadsQueryKey(queryParams) },
   });
 
   const getStatusColor = (status: string) => {
@@ -48,32 +51,55 @@ export default function Leads() {
     }
   };
 
+  const getPipelineColor = (status: string) => {
+    switch (status) {
+      case "won": return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400";
+      case "lost": return "bg-slate-500/15 text-slate-700 dark:text-slate-400";
+      case "proposal": return "bg-indigo-500/15 text-indigo-700 dark:text-indigo-400";
+      case "qualified": return "bg-purple-500/15 text-purple-700 dark:text-purple-400";
+      case "contacted": return "bg-amber-500/15 text-amber-700 dark:text-amber-400";
+      default: return "bg-blue-500/15 text-blue-700 dark:text-blue-400";
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Leads Pipeline</h1>
-          <p className="text-muted-foreground">Manage and track your creator outreach</p>
+          <p className="text-muted-foreground">Manage and track every lead, creator or sales</p>
         </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 bg-card p-4 rounded-xl border">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search handles, niches, bios..." 
+          <Input
+            placeholder="Search names, handles, niches, bios..."
             className="pl-9"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex gap-2 w-full sm:w-auto">
+        <div className="flex gap-2 w-full sm:w-auto flex-wrap">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder="Pipeline Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="all">All Pipeline Stages</SelectItem>
+              {PIPELINE_STATUSES.map((s) => (
+                <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={dmStatusFilter} onValueChange={setDmStatusFilter}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="DM Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All DM Statuses</SelectItem>
               <SelectItem value="Not Sent">Not Sent</SelectItem>
               <SelectItem value="Sent">Sent</SelectItem>
               <SelectItem value="Replied">Replied</SelectItem>
@@ -81,7 +107,7 @@ export default function Leads() {
               <SelectItem value="Not Interested">Not Interested</SelectItem>
             </SelectContent>
           </Select>
-          
+
           <Select value={nicheFilter} onValueChange={setNicheFilter}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Niche" />
@@ -100,10 +126,10 @@ export default function Leads() {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead>Handle</TableHead>
+              <TableHead>Name</TableHead>
               <TableHead>Niche</TableHead>
-              <TableHead>Followers</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Pipeline</TableHead>
+              <TableHead>DM Status</TableHead>
               <TableHead>Priority</TableHead>
               <TableHead className="text-right">Call</TableHead>
             </TableRow>
@@ -114,7 +140,7 @@ export default function Leads() {
                 <TableRow key={i}>
                   <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                   <TableCell><Skeleton className="h-5 w-8" /></TableCell>
                   <TableCell><Skeleton className="h-5 w-8 ml-auto" /></TableCell>
@@ -128,19 +154,30 @@ export default function Leads() {
               </TableRow>
             ) : (
               leads?.map((lead) => (
-                <TableRow 
-                  key={lead.id} 
+                <TableRow
+                  key={lead.id}
                   className="cursor-pointer hover:bg-muted/50 transition-colors"
                   onClick={() => setLocation(`/leads/${lead.id}`)}
                 >
-                  <TableCell className="font-medium">{lead.instagramHandle}</TableCell>
-                  <TableCell>
+                  <TableCell className="font-medium">
                     <div className="flex flex-col">
-                      <span className="text-sm">{lead.niche}</span>
-                      <span className="text-xs text-muted-foreground">{lead.subNiche}</span>
+                      <span>{lead.name}</span>
+                      {lead.instagramHandle && (
+                        <span className="text-xs text-muted-foreground font-normal">{lead.instagramHandle}</span>
+                      )}
                     </div>
                   </TableCell>
-                  <TableCell>{lead.estFollowers}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="text-sm">{lead.niche ?? "—"}</span>
+                      {lead.subNiche && <span className="text-xs text-muted-foreground">{lead.subNiche}</span>}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={`border-0 font-medium capitalize ${getPipelineColor(lead.status)}`}>
+                      {lead.status}
+                    </Badge>
+                  </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={`border-0 font-medium ${getStatusColor(lead.dmStatus)}`}>
                       {lead.dmStatus}
@@ -148,14 +185,14 @@ export default function Leads() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      <span className={`font-semibold ${lead.priorityScore >= 8 ? 'text-primary' : ''}`}>
+                      <span className={`font-semibold ${lead.priorityScore >= 8 ? "text-primary" : ""}`}>
                         {lead.priorityScore}
                       </span>
                       <span className="text-muted-foreground text-xs">/10</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    {lead.callBooked === 'Yes' ? (
+                    {lead.callBooked === "Yes" ? (
                       <Badge className="bg-primary/20 text-primary hover:bg-primary/30 border-0">Yes</Badge>
                     ) : (
                       <span className="text-muted-foreground text-sm">No</span>

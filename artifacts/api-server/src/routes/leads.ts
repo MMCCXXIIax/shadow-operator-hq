@@ -1,6 +1,6 @@
-import { Router, type IRouter, type Request, type Response } from "express";
-import { eq, ilike, and, gte, lte, or, sql, isNull } from "drizzle-orm";
-import { db, leadsTable, type Lead } from "@workspace/db";
+import { Router, type IRouter } from "express";
+import { eq, ilike, and, gte, lte, or, sql } from "drizzle-orm";
+import { db, leadsTable, followUpsTable, type Lead } from "@workspace/db";
 import {
   ListLeadsQueryParams,
   CreateLeadBody,
@@ -13,6 +13,8 @@ import {
   ListLeadsResponse,
   GetLeadStatsResponse,
 } from "@workspace/api-zod";
+import { requireAuth } from "../lib/route-auth";
+import { FOLLOW_UP_OFFSETS, addDays } from "../lib/followups";
 
 function serializeLead(lead: Lead) {
   return {
@@ -20,14 +22,6 @@ function serializeLead(lead: Lead) {
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   };
-}
-
-function requireAuth(req: Request, res: Response): string | null {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return null;
-  }
-  return req.user!.id;
 }
 
 const router: IRouter = Router();
@@ -67,12 +61,20 @@ router.get("/leads/stats", async (req, res): Promise<void> => {
     .groupBy(leadsTable.dmStatus)
     .orderBy(sql`count(*) desc`);
 
+  const statusBreakdown = await db
+    .select({ status: leadsTable.status, count: sql<number>`count(*)::int` })
+    .from(leadsTable)
+    .where(userFilter)
+    .groupBy(leadsTable.status)
+    .orderBy(sql`count(*) desc`);
+
   const stats = {
     totalLeads: totalLeads[0]?.count ?? 0,
     callsBooked: callsBooked[0]?.count ?? 0,
     avgPriorityScore: Number((avgPriority[0]?.avg ?? 0).toFixed(1)),
     nicheBreakdown: nicheBreakdown.map((r) => ({ niche: r.niche, count: r.count })),
     dmStatusBreakdown: dmStatusBreakdown.map((r) => ({ dmStatus: r.dmStatus, count: r.count })),
+    statusBreakdown: statusBreakdown.map((r) => ({ status: r.status, count: r.count })),
   };
 
   res.json(GetLeadStatsResponse.parse(stats));
@@ -88,13 +90,14 @@ router.get("/leads", async (req, res): Promise<void> => {
     return;
   }
 
-  const { search, niche, dmStatus, callBooked, minPriority, maxPriority } = parsed.data;
+  const { search, niche, dmStatus, callBooked, status, minPriority, maxPriority } = parsed.data;
 
   const conditions = [eq(leadsTable.userId, userId)];
 
   if (search) {
     conditions.push(
       or(
+        ilike(leadsTable.name, `%${search}%`),
         ilike(leadsTable.instagramHandle, `%${search}%`),
         ilike(leadsTable.niche, `%${search}%`),
         ilike(leadsTable.subNiche, `%${search}%`),
@@ -106,6 +109,7 @@ router.get("/leads", async (req, res): Promise<void> => {
   if (niche) conditions.push(eq(leadsTable.niche, niche));
   if (dmStatus) conditions.push(eq(leadsTable.dmStatus, dmStatus));
   if (callBooked) conditions.push(eq(leadsTable.callBooked, callBooked));
+  if (status) conditions.push(eq(leadsTable.status, status));
   if (minPriority != null) conditions.push(gte(leadsTable.priorityScore, minPriority));
   if (maxPriority != null) conditions.push(lte(leadsTable.priorityScore, maxPriority));
 
@@ -132,6 +136,16 @@ router.post("/leads", async (req, res): Promise<void> => {
     .insert(leadsTable)
     .values({ ...parsed.data, userId })
     .returning();
+
+  const now = new Date();
+  const followUps = FOLLOW_UP_OFFSETS.map((offset) => ({
+    leadId: lead.id,
+    userId,
+    scheduledDate: addDays(now, offset),
+    dayOffset: offset,
+    status: "pending" as const,
+  }));
+  await db.insert(followUpsTable).values(followUps);
 
   res.status(201).json(GetLeadResponse.parse(serializeLead(lead)));
 });
@@ -211,12 +225,5 @@ router.delete("/leads/:id", async (req, res): Promise<void> => {
 
   res.sendStatus(204);
 });
-
-export async function claimUnownedLeads(userId: string): Promise<void> {
-  await db
-    .update(leadsTable)
-    .set({ userId })
-    .where(isNull(leadsTable.userId));
-}
 
 export default router;

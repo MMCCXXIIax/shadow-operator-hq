@@ -1,7 +1,7 @@
 import React from "react";
 import { useLocation, Link } from "wouter";
 import { NICHES, SUB_NICHES } from "@/lib/niches";
-import { useCreateLead, getListLeadsQueryKey, getGetLeadStatsQueryKey } from "@workspace/api-client-react";
+import { useCreateLead, getListLeadsQueryKey, getGetLeadStatsQueryKey, getListFollowupsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,12 +29,17 @@ import {
 import { ArrowLeft, Loader2 } from "lucide-react";
 
 const formSchema = z.object({
-  instagramHandle: z.string().min(1, "Instagram handle is required"),
-  niche: z.string().min(1, "Niche is required"),
-  subNiche: z.string().min(1, "Sub-niche is required"),
-  estFollowers: z.string(),
-  profileBioSummary: z.string(),
-  monetizationGap: z.string(),
+  name: z.string().min(1, "Name is required"),
+  company: z.string().optional(),
+  email: z.string().email("Invalid email").or(z.literal("")).optional(),
+  phone: z.string().optional(),
+  status: z.enum(["new", "contacted", "qualified", "proposal", "won", "lost"]),
+  instagramHandle: z.string().optional(),
+  niche: z.string().optional(),
+  subNiche: z.string().optional(),
+  estFollowers: z.string().optional(),
+  profileBioSummary: z.string().optional(),
+  monetizationGap: z.string().optional(),
   priorityScore: z.coerce.number().min(1).max(10),
   dmStatus: z.string(),
   response: z.string().optional(),
@@ -47,24 +52,30 @@ export default function NewLead() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedNiche, setSelectedNiche] = React.useState<string>("");
-  
+
   const createLead = useCreateLead({
     mutation: {
       onSuccess: (data) => {
         queryClient.invalidateQueries({ queryKey: getListLeadsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetLeadStatsQueryKey() });
-        toast({ title: "Lead created", description: "Successfully added to your pipeline." });
+        queryClient.invalidateQueries({ queryKey: getListFollowupsQueryKey() });
+        toast({ title: "Lead created", description: "Added to your pipeline with 5 follow-ups scheduled." });
         setLocation(`/leads/${data.id}`);
       },
       onError: () => {
         toast({ title: "Error", description: "Failed to create lead.", variant: "destructive" });
-      }
-    }
+      },
+    },
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: "",
+      company: "",
+      email: "",
+      phone: "",
+      status: "new",
       instagramHandle: "",
       niche: "",
       subNiche: "",
@@ -80,7 +91,23 @@ export default function NewLead() {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    createLead.mutate({ data: values });
+    const { email, company, phone, instagramHandle, niche, subNiche, estFollowers, profileBioSummary, monetizationGap, response, notes, ...rest } = values;
+    createLead.mutate({
+      data: {
+        ...rest,
+        email: email || undefined,
+        company: company || undefined,
+        phone: phone || undefined,
+        instagramHandle: instagramHandle || undefined,
+        niche: niche || undefined,
+        subNiche: subNiche || undefined,
+        estFollowers: estFollowers || undefined,
+        profileBioSummary: profileBioSummary || undefined,
+        monetizationGap: monetizationGap || undefined,
+        response: response || undefined,
+        notes: notes || undefined,
+      },
+    });
   }
 
   return (
@@ -91,7 +118,7 @@ export default function NewLead() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Add New Lead</h1>
-          <p className="text-muted-foreground">Enter creator profile and strategy details</p>
+          <p className="text-muted-foreground">Name is the only required field — fill in whatever else applies</p>
         </div>
       </div>
 
@@ -99,7 +126,99 @@ export default function NewLead() {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Profile Info</CardTitle>
+              <CardTitle>Contact Info</CardTitle>
+              <CardDescription>Works for any lead, creator or sales.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Jane Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Pipeline Status</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="new">New</SelectItem>
+                          <SelectItem value="contacted">Contacted</SelectItem>
+                          <SelectItem value="qualified">Qualified</SelectItem>
+                          <SelectItem value="proposal">Proposal</SelectItem>
+                          <SelectItem value="won">Won</SelectItem>
+                          <SelectItem value="lost">Lost</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="company"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Acme Corp" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input placeholder="name@company.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="555-0100" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Creator Profile</CardTitle>
+              <CardDescription>Optional — fill in for Instagram creator-outreach leads.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -209,7 +328,7 @@ export default function NewLead() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Strategy & Status</CardTitle>
+              <CardTitle>Strategy & Outreach</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
@@ -286,7 +405,7 @@ export default function NewLead() {
                         </FormControl>
                         <SelectContent>
                           {Array.from({ length: 10 }).map((_, i) => (
-                            <SelectItem key={i+1} value={(i+1).toString()}>{i+1}</SelectItem>
+                            <SelectItem key={i + 1} value={(i + 1).toString()}>{i + 1}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>

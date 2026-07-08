@@ -17,7 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Users, LayoutDashboard, Plus, ArrowUpRight, Bell, LogOut, ChevronDown } from "lucide-react";
+import { Users, LayoutDashboard, Plus, LogOut, ChevronDown } from "lucide-react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -72,7 +72,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <div className="size-6 bg-primary rounded-sm flex items-center justify-center">
                 <div className="size-2 bg-background rounded-full" />
               </div>
-              AI Shadow
+              Shadow Operator HQ
             </div>
           </SidebarHeader>
           <SidebarContent className="p-4">
@@ -96,24 +96,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="p-4 border-t border-sidebar-border space-y-3">
-            <a
-              href="https://snipr.is/followflow"
-              target="_blank"
-              rel="noopener noreferrer"
-              data-testid="link-followflow-sidebar"
-              className="block group rounded-lg p-3 bg-primary/10 hover:bg-primary/20 border border-primary/20 hover:border-primary/40 transition-all duration-200"
-            >
-              <div className="flex items-start justify-between gap-2 mb-1">
-                <div className="flex items-center gap-2">
-                  <Bell className="size-3.5 text-primary shrink-0" />
-                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">FollowFlow</span>
-                </div>
-                <ArrowUpRight className="size-3.5 text-primary opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-150 shrink-0" />
-              </div>
-              <p className="text-xs text-sidebar-foreground/70 leading-relaxed">
-                Track follow-ups automatically. Create your free account.
-              </p>
-            </a>
             <UserMenu />
           </SidebarFooter>
         </Sidebar>

@@ -13,7 +13,6 @@ import {
   SESSION_TTL,
   type SessionData,
 } from "../lib/auth";
-import { claimUnownedLeads } from "./leads";
 
 const router: IRouter = Router();
 
@@ -56,8 +55,6 @@ router.post("/auth/signup", async (req: Request, res: Response) => {
   const sessionData: SessionData = { user: sessionUser };
   const sid = await createSession(sessionData);
   setSessionCookie(res, sid);
-
-  await claimUnownedLeads(user.id);
 
   res.status(201).json(GetCurrentAuthUserResponse.parse({ user: sessionUser }));
 });

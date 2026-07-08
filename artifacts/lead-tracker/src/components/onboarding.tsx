@@ -31,7 +31,7 @@ const STEPS: Step[] = [
     iconColor: "text-primary",
     title: "Your pipeline is ready",
     description:
-      "AI Shadow Lead Tracker is your private CRM for Instagram creator outreach. Everything is set up and loaded with leads — let's take a 60-second tour.",
+      "Shadow Operator HQ is your private CRM for creator outreach and sales pipeline. Add your first lead to get started — let's take a 60-second tour.",
     detail:
       "You can revisit this tour anytime by signing out and creating a new account, or just explore on your own.",
   },
