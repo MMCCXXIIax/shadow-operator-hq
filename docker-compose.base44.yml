@@ -1,0 +1,95 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: shadow
+      POSTGRES_PASSWORD: shadowpass
+      POSTGRES_DB: shadowhq
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shadow -d shadowhq"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: on-failure
+
+  install-deps:
+    build:
+      context: .
+      dockerfile: Dockerfile.base44
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: ["sh", "-ec", "pnpm install --frozen-lockfile"]
+    restart: "no"
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.base44
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: ["sh", "-ec", "pnpm --filter @workspace/db run push"]
+    environment:
+      DATABASE_URL: postgresql://shadow:shadowpass@db:5432/shadowhq
+    depends_on:
+      db:
+        condition: service_healthy
+      install-deps:
+        condition: service_completed_successfully
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.base44
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: ["sh", "-ec", "pnpm --filter @workspace/api-server run dev"]
+    environment:
+      PORT: "8080"
+      DATABASE_URL: postgresql://shadow:shadowpass@db:5432/shadowhq
+      NODE_ENV: development
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8080/api/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 45s
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.base44
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: ["sh", "-ec", "PORT=3000 BASE_PATH=/ API_PROXY_TARGET=http://api:8080 pnpm --filter @workspace/lead-tracker run dev"]
+    environment:
+      PORT: "3000"
+      BASE_PATH: "/"
+      NODE_ENV: development
+      BASE44_PREVIEW_MODE: "1"
+      __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS: "${BASE44_PUBLIC_HOST_SUFFIX}"
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+volumes:
+  pgdata:
