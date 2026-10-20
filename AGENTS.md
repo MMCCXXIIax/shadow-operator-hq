@@ -1,0 +1,46 @@
+# AGENTS.md — Shadow Operator HQ (pnpm workspace)
+
+Findings that aren't obvious from the manifests. Read `replit.md` for the product/stack overview.
+
+## Running the app here (Base44 sandbox / Docker)
+
+```bash
+docker compose -f docker-compose.base44.yml up -d --build
+```
+
+| Service | What it does |
+| --- | --- |
+| `db` | `postgres:16`, dev credentials `app/app/app`, volume `db-data` |
+| `setup` | one-shot: `pnpm install --frozen-lockfile` + `drizzle-kit push` (must exit 0 before the apps start) |
+| `api` | `pnpm --filter @workspace/api-server run dev` (Express on `:8080`), built by esbuild |
+| `web` | `pnpm --filter @workspace/lead-tracker run dev` (Vite, published on host `:3000`) |
+
+Non-obvious bits:
+
+- The repo itself has **no** compose file that runs from source — `docker-compose.base44.yml` is the only dev-from-source stack.
+- The whole workspace is bind-mounted at `/app`; dependencies live in `/app/node_modules` (installed by `setup`, not baked into an image). Re-run `docker compose -f docker-compose.base44.yml up -d --force-recreate setup` (or just `up -d`) after changing a `package.json`/lockfile.
+- `pnpm` is installed at container start (`npm i -g pnpm@10`); the workspace pins no `packageManager`, so keep it in sync with the lockfile's `lockfileVersion: '9.0'`.
+- `.pnpm-store/` appears in the workspace root at runtime (pnpm's store on a mounted volume) and is gitignored.
+- The API needs `DATABASE_URL` and **fails fast** without it (`lib/db/src/index.ts`). Schema must be pushed before the API is useful, hence the `setup` service.
+- Auth is entirely local (email + password, bcrypt, sessions in Postgres) — no external identity provider or API keys, so the stack runs with no secrets.
+- The browser talks to a **single origin** on `:3000`. `artifacts/lead-tracker/vite.config.ts` proxies `/api` to the API service when `BASE44_PREVIEW_MODE=1` and `API_PROXY_TARGET` is set (wired in the compose file); outside that combination the config is unchanged. Without the proxy, sign-in/leads calls 404 because the frontend always fetches relative `/api/...` URLs.
+- Frontend edits hot-reload (Vite). The API has no watcher: `docker compose -f docker-compose.base44.yml restart api` after backend edits (its `dev` script esbuild-bundles then starts).
+
+## Builds and checks
+
+```bash
+pnpm run typecheck        # tsc for libs + all artifacts
+pnpm run build            # typecheck, then vite/esbuild builds for all artifacts
+pnpm -r --if-present run build   # what the root build script runs per package
+```
+
+- The root build includes **three** Vite apps: `artifacts/lead-tracker`, `artifacts/mockup-sandbox` (design playground, not part of the CRM UI) and the esbuild bundle for `artifacts/api-server`. A failure in any one fails the workspace build — which is what a deployment build runs, so it must stay green.
+- `artifacts/*/vite.config.ts` read `PORT` and `BASE_PATH`. They are set by the Replit dev workflows only, so the configs **fall back to defaults** (`5173`/`5174`, base `/`) rather than throwing when a plain build runs without them.
+- `pnpm --filter <name>` works both with the package name (`@workspace/db`) and the directory name (`db`); `scripts/post-merge.sh` relies on the latter.
+
+## Verifying a change
+
+1. `docker compose -f docker-compose.base44.yml ps` — `db` healthy, `setup` exited 0, `api`/`web` healthy.
+2. `curl -s localhost:3000/` returns the app shell, `curl -s localhost:3000/api/healthz` returns `{"status":"ok"}` through the Vite proxy.
+3. In the browser: the signed-out landing page renders; signing up (the app's own form) leads to the "Command Center" dashboard with the first-run tour, and `/leads` lists leads. Accounts are created through the UI — there is no seed data, and every lead is owned by its creator.
+4. `pnpm run build` must exit 0 (run it in a container: `docker compose -f docker-compose.base44.yml run --rm --no-deps --entrypoint sh setup -c "npm i -g pnpm@10 >/dev/null && cd /app && pnpm run build"`).

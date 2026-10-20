@@ -10,6 +10,8 @@ out-tsc
 
 # dependencies
 node_modules
+# pnpm content-addressable store created inside the workspace by the Base44 dev stack
+/.pnpm-store/
 
 # IDEs and editors
 /.idea

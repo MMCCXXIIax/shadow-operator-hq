@@ -4,13 +4,10 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
-const rawPort = process.env.PORT;
-
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
-}
+// PORT/BASE_PATH are supplied by the Replit workflow when the dev server runs.
+// They are absent during a plain build (`pnpm run build`, deployments), so fall
+// back to the defaults a static build needs instead of failing the workspace build.
+const rawPort = process.env.PORT ?? "5173";
 
 const port = Number(rawPort);
 
@@ -18,13 +15,15 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-const basePath = process.env.BASE_PATH;
+const basePath = process.env.BASE_PATH ?? "/";
 
-if (!basePath) {
-  throw new Error(
-    "BASE_PATH environment variable is required but was not provided.",
-  );
-}
+// Sandbox/dev only (docker-compose.base44.yml): the preview is served from a
+// single origin, so the dev server proxies /api to the API service. Unset in
+// every other environment, where the original behavior is unchanged.
+const apiProxyTarget =
+  process.env.BASE44_PREVIEW_MODE === "1"
+    ? process.env.API_PROXY_TARGET
+    : undefined;
 
 export default defineConfig({
   base: basePath,
@@ -66,6 +65,9 @@ export default defineConfig({
     fs: {
       strict: true,
     },
+    ...(apiProxyTarget
+      ? { proxy: { "/api": { target: apiProxyTarget, changeOrigin: true } } }
+      : {}),
   },
   preview: {
     port,
