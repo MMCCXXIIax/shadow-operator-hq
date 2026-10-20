@@ -59,11 +59,11 @@ export default function NewLead() {
         queryClient.invalidateQueries({ queryKey: getListLeadsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetLeadStatsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getListFollowupsQueryKey() });
-        toast({ title: "Lead created", description: "Added to your pipeline with 5 follow-ups scheduled." });
+        toast({ title: "Creator added", description: "Added to your pipeline with 5 follow-ups scheduled." });
         setLocation(`/leads/${data.id}`);
       },
       onError: () => {
-        toast({ title: "Error", description: "Failed to create lead.", variant: "destructive" });
+        toast({ title: "Error", description: "Failed to add creator.", variant: "destructive" });
       },
     },
   });
@@ -117,8 +117,8 @@ export default function NewLead() {
           <Link href="/leads"><ArrowLeft className="size-4" /></Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Add New Lead</h1>
-          <p className="text-muted-foreground">Name is the only required field — fill in whatever else applies</p>
+          <h1 className="text-2xl font-bold tracking-tight">Add Creator</h1>
+          <p className="text-muted-foreground">Start with a name — add profile details and partnership context as you learn them.</p>
         </div>
       </div>
 
@@ -126,8 +126,8 @@ export default function NewLead() {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Contact Info</CardTitle>
-              <CardDescription>Works for any lead, creator or sales.</CardDescription>
+              <CardTitle>Creator &amp; Contact</CardTitle>
+              <CardDescription>Who this creator is and how to reach them.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -218,7 +218,7 @@ export default function NewLead() {
           <Card>
             <CardHeader>
               <CardTitle>Creator Profile</CardTitle>
-              <CardDescription>Optional — fill in for Instagram creator-outreach leads.</CardDescription>
+              <CardDescription>Optional — how they present themselves publicly.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -442,7 +442,7 @@ export default function NewLead() {
                   Creating...
                 </>
               ) : (
-                "Create Lead"
+                "Add Creator"
               )}
             </Button>
           </div>

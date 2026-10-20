@@ -69,6 +69,14 @@ export const LogOutResponse = zod.object({
 });
 
 /**
+ * This is a private, single-operator workspace. Sign-up is open only while the workspace has no accounts yet, or for emails explicitly allowed by configuration.
+ * @summary Whether this workspace currently accepts new accounts
+ */
+export const GetSignupAvailabilityResponse = zod.object({
+  open: zod.boolean(),
+});
+
+/**
  * Returns aggregated stats - niche breakdown, DM status counts, pipeline status counts, priority distribution
  * @summary Get lead statistics
  */
@@ -310,6 +318,191 @@ export const GetLeadFollowupsResponseItem = zod.object({
   leadInstagramHandle: zod.string().nullish(),
 });
 export const GetLeadFollowupsResponse = zod.array(GetLeadFollowupsResponseItem);
+
+/**
+ * @summary List evidence captured about a creator
+ */
+export const ListLeadEvidenceParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListLeadEvidenceResponseItem = zod.object({
+  id: zod.number(),
+  leadId: zod.number(),
+  userId: zod.string(),
+  evidenceType: zod.enum([
+    "public_bio",
+    "public_post",
+    "visible_metric",
+    "audience_question",
+    "creator_provided",
+    "other",
+  ]),
+  sourceUrl: zod.string().nullish(),
+  sourceDescription: zod.string().nullish(),
+  capturedAt: zod.coerce.date(),
+  content: zod.string(),
+  verificationStatus: zod.enum([
+    "unverified",
+    "creator_stated",
+    "verified",
+    "disputed",
+  ]),
+  retrievalMethod: zod.enum([
+    "manual_entry",
+    "screenshot",
+    "creator_message",
+    "api",
+    "other",
+  ]),
+  notes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+export const ListLeadEvidenceResponse = zod.array(ListLeadEvidenceResponseItem);
+
+/**
+ * The owner is derived from the session and the creator is verified to belong to that owner; client-supplied ids are not trusted.
+ * @summary Record evidence about a creator
+ */
+export const CreateLeadEvidenceParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CreateLeadEvidenceBody = zod.object({
+  evidenceType: zod.enum([
+    "public_bio",
+    "public_post",
+    "visible_metric",
+    "audience_question",
+    "creator_provided",
+    "other",
+  ]),
+  content: zod.string().min(1),
+  sourceUrl: zod.string().nullish(),
+  sourceDescription: zod.string().nullish(),
+  capturedAt: zod.coerce.date().optional(),
+  verificationStatus: zod
+    .enum(["unverified", "creator_stated", "verified", "disputed"])
+    .optional(),
+  retrievalMethod: zod
+    .enum(["manual_entry", "screenshot", "creator_message", "api", "other"])
+    .optional(),
+  notes: zod.string().nullish(),
+});
+
+/**
+ * @summary Get one evidence item
+ */
+export const GetEvidenceItemParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetEvidenceItemResponse = zod.object({
+  id: zod.number(),
+  leadId: zod.number(),
+  userId: zod.string(),
+  evidenceType: zod.enum([
+    "public_bio",
+    "public_post",
+    "visible_metric",
+    "audience_question",
+    "creator_provided",
+    "other",
+  ]),
+  sourceUrl: zod.string().nullish(),
+  sourceDescription: zod.string().nullish(),
+  capturedAt: zod.coerce.date(),
+  content: zod.string(),
+  verificationStatus: zod.enum([
+    "unverified",
+    "creator_stated",
+    "verified",
+    "disputed",
+  ]),
+  retrievalMethod: zod.enum([
+    "manual_entry",
+    "screenshot",
+    "creator_message",
+    "api",
+    "other",
+  ]),
+  notes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Update an evidence item
+ */
+export const UpdateEvidenceItemParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateEvidenceItemBody = zod.object({
+  evidenceType: zod
+    .enum([
+      "public_bio",
+      "public_post",
+      "visible_metric",
+      "audience_question",
+      "creator_provided",
+      "other",
+    ])
+    .optional(),
+  content: zod.string().min(1).optional(),
+  sourceUrl: zod.string().nullish(),
+  sourceDescription: zod.string().nullish(),
+  capturedAt: zod.coerce.date().optional(),
+  verificationStatus: zod
+    .enum(["unverified", "creator_stated", "verified", "disputed"])
+    .optional(),
+  retrievalMethod: zod
+    .enum(["manual_entry", "screenshot", "creator_message", "api", "other"])
+    .optional(),
+  notes: zod.string().nullish(),
+});
+
+export const UpdateEvidenceItemResponse = zod.object({
+  id: zod.number(),
+  leadId: zod.number(),
+  userId: zod.string(),
+  evidenceType: zod.enum([
+    "public_bio",
+    "public_post",
+    "visible_metric",
+    "audience_question",
+    "creator_provided",
+    "other",
+  ]),
+  sourceUrl: zod.string().nullish(),
+  sourceDescription: zod.string().nullish(),
+  capturedAt: zod.coerce.date(),
+  content: zod.string(),
+  verificationStatus: zod.enum([
+    "unverified",
+    "creator_stated",
+    "verified",
+    "disputed",
+  ]),
+  retrievalMethod: zod.enum([
+    "manual_entry",
+    "screenshot",
+    "creator_message",
+    "api",
+    "other",
+  ]),
+  notes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete an evidence item
+ */
+export const DeleteEvidenceItemParams = zod.object({
+  id: zod.coerce.number(),
+});
 
 /**
  * @summary List pending follow-ups for current user, grouped by urgency

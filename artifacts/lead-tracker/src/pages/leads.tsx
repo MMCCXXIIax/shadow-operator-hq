@@ -66,8 +66,8 @@ export default function Leads() {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Leads Pipeline</h1>
-          <p className="text-muted-foreground">Manage and track every lead, creator or sales</p>
+          <h1 className="text-3xl font-bold tracking-tight">Creators &amp; Partnerships</h1>
+          <p className="text-muted-foreground">Every creator you are evaluating, talking to, or partnering with.</p>
         </div>
       </div>
 
@@ -126,7 +126,7 @@ export default function Leads() {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead>Name</TableHead>
+              <TableHead>Creator</TableHead>
               <TableHead>Niche</TableHead>
               <TableHead>Pipeline</TableHead>
               <TableHead>DM Status</TableHead>
@@ -149,7 +149,7 @@ export default function Leads() {
             ) : leads?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
-                  No leads found matching your filters.
+                  No creators found matching your filters.
                 </TableCell>
               </TableRow>
             ) : (

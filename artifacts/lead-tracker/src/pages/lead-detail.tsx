@@ -39,6 +39,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EvidenceSection } from "@/components/evidence-section";
 import { format } from "date-fns";
 
 const PIPELINE_STATUSES = ["new", "contacted", "qualified", "proposal", "won", "lost"] as const;
@@ -73,10 +74,10 @@ export default function LeadDetail() {
         queryClient.setQueryData(getGetLeadQueryKey(leadId), data);
         queryClient.invalidateQueries({ queryKey: getListLeadsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetLeadStatsQueryKey() });
-        toast({ title: "Lead updated", description: "Changes saved successfully." });
+        toast({ title: "Creator updated", description: "Changes saved successfully." });
       },
       onError: () => {
-        toast({ title: "Error", description: "Failed to update lead.", variant: "destructive" });
+        toast({ title: "Error", description: "Failed to update creator.", variant: "destructive" });
       },
     },
   });
@@ -86,11 +87,11 @@ export default function LeadDetail() {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListLeadsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetLeadStatsQueryKey() });
-        toast({ title: "Lead deleted" });
+        toast({ title: "Creator deleted" });
         setLocation("/leads");
       },
       onError: () => {
-        toast({ title: "Error", description: "Failed to delete lead.", variant: "destructive" });
+        toast({ title: "Error", description: "Failed to delete creator.", variant: "destructive" });
       },
     },
   });
@@ -183,7 +184,8 @@ export default function LeadDetail() {
           <Link href="/leads"><ArrowLeft className="size-4" /></Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Lead Profile</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Creator Profile</h1>
+          <p className="text-sm text-muted-foreground">Creator details, partnership pipeline, and the evidence behind them.</p>
         </div>
       </div>
 
@@ -369,6 +371,8 @@ export default function LeadDetail() {
               )}
             </CardContent>
           </Card>
+
+          <EvidenceSection leadId={leadId} leadName={lead.name} />
         </div>
 
         <div className="space-y-6">
@@ -447,7 +451,7 @@ export default function LeadDetail() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Lead Response</label>
+                <label className="text-sm font-medium">Creator Response</label>
                 <Textarea
                   value={formData.response}
                   onChange={(e) => setFormData((prev) => ({ ...prev, response: e.target.value }))}
@@ -500,14 +504,14 @@ export default function LeadDetail() {
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" className="w-full">
                     <Trash2 className="size-4 mr-2" />
-                    Delete Lead
+                    Delete Creator
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will permanently delete the lead "{lead.name}" and remove their data from our servers.
+                      This permanently deletes the creator record "{lead.name}" and all evidence attached to it.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -516,7 +520,7 @@ export default function LeadDetail() {
                       onClick={() => deleteLead.mutate({ id: leadId })}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                      {deleteLead.isPending ? "Deleting..." : "Delete Lead"}
+                      {deleteLead.isPending ? "Deleting..." : "Delete Creator"}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>

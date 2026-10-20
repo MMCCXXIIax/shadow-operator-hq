@@ -72,7 +72,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <div className="size-6 bg-primary rounded-sm flex items-center justify-center">
                 <div className="size-2 bg-background rounded-full" />
               </div>
-              Shadow Operator HQ
+              ShadowOS
             </div>
           </SidebarHeader>
           <SidebarContent className="p-4">
@@ -89,7 +89,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <SidebarMenuButton asChild isActive={location === "/leads" || location.startsWith("/leads/")}>
                   <Link href="/leads">
                     <Users className="size-4" />
-                    <span>Leads Pipeline</span>
+                    <span>Creators &amp; Partnerships</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -106,7 +106,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="flex-1" />
             <Link href="/leads/new" className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
               <Plus className="mr-2 size-4" />
-              New Lead
+              New Creator
             </Link>
           </header>
           <div className="flex-1 p-6 md:p-8 max-w-7xl mx-auto w-full">

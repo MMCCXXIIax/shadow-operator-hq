@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,30 +22,30 @@ const FEATURES = [
     icon: CalendarClock,
     title: "Automated Follow-Up Schedule",
     description:
-      "Every new lead gets 5 follow-ups scheduled automatically — day 0, 3, 7, 11, and 14. Never lose track of who's due.",
+      "Every new creator gets 5 follow-ups scheduled automatically — day 0, 3, 7, 11, and 14. Never lose track of who's due.",
   },
   {
     icon: BarChart3,
     title: "Full Outreach Pipeline",
     description:
-      "Track every lead from cold to closed. DM status, sales pipeline stage, calls booked, and priority scores — all in one view.",
+      "Track every creator from first contact to signed partnership. DM status, pipeline stage, calls booked, and priority scores — all in one view.",
   },
   {
     icon: Search,
     title: "Instant Filter & Search",
     description:
-      "Find any lead in seconds. Filter by niche, DM status, pipeline stage, priority score, or call booked status.",
+      "Find any creator in seconds. Filter by niche, DM status, pipeline stage, priority score, or call booked status.",
   },
   {
     icon: ShieldCheck,
     title: "Your Data, Private",
     description:
-      "Account-isolated by design. Only you can see your leads — no shared access, no leaks.",
+      "Account-isolated by design. Only you can see your creators and their evidence — no shared access, no leaks.",
   },
 ];
 
 const STATS = [
-  { value: "5", label: "Auto follow-ups per lead" },
+  { value: "5", label: "Auto follow-ups per creator" },
   { value: "0/3/7/11/14", label: "Day schedule" },
   { value: "1–10", label: "Priority scoring" },
   { value: "100%", label: "Your data only" },
@@ -64,6 +64,24 @@ export default function Landing({
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // Private workspace: only offer sign-up when the API says an account can
+  // actually be created (no accounts yet, or this email is explicitly allowed).
+  const [signupOpen, setSignupOpen] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/auth/signup-availability", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : { open: false }))
+      .then((data) => {
+        if (!cancelled) setSignupOpen(Boolean(data?.open));
+      })
+      .catch(() => {
+        if (!cancelled) setSignupOpen(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -120,7 +138,7 @@ export default function Landing({
           <div className="size-8 bg-primary rounded-md flex items-center justify-center shadow-sm">
             <div className="size-3 bg-background rounded-full" />
           </div>
-          Shadow Operator HQ
+          ShadowOS
         </div>
 
         {/* Hero */}
@@ -131,15 +149,15 @@ export default function Landing({
           </div>
 
           <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] mb-5 text-foreground">
-            Close more deals.
+            Know the creator.
             <br />
-            <span className="text-primary">Track every lead.</span>
+            <span className="text-primary">Build the partnership.</span>
           </h1>
 
           <p className="text-muted-foreground text-lg leading-relaxed mb-10">
-            The unified CRM for creator outreach and sales pipeline. Manage
-            your leads, automate your follow-ups, and never lose track of a
-            warm lead again.
+            A private workspace for creator outreach and partnerships. Track
+            every creator, capture the evidence behind each opportunity, and
+            never lose track of a warm conversation again.
           </p>
 
           {/* Feature list */}
@@ -187,7 +205,7 @@ export default function Landing({
           <div className="size-8 bg-primary rounded-md flex items-center justify-center shadow-sm">
             <div className="size-3 bg-background rounded-full" />
           </div>
-          Shadow Operator HQ
+          ShadowOS
         </div>
 
         <div className="w-full max-w-sm mx-auto">
@@ -198,7 +216,7 @@ export default function Landing({
             </h2>
             <p className="text-sm text-muted-foreground">
               {mode === "signin"
-                ? "Sign in to access your lead pipeline."
+                ? "Sign in to access your creator workspace."
                 : "Set up your operator account to get started."}
             </p>
           </div>
@@ -306,7 +324,7 @@ export default function Landing({
 
           {/* Mode switch */}
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            {mode === "signin" ? (
+            {mode === "signin" && signupOpen ? (
               <>
                 Don&apos;t have an account?{" "}
                 <button
@@ -316,7 +334,7 @@ export default function Landing({
                   Sign up free
                 </button>
               </>
-            ) : (
+            ) : mode === "signup" ? (
               <>
                 Already have an account?{" "}
                 <button
@@ -326,6 +344,8 @@ export default function Landing({
                   Sign in
                 </button>
               </>
+            ) : (
+              signupOpen === false && "This is a private workspace. Ask the operator for access."
             )}
           </p>
 

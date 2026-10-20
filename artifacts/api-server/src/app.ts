@@ -27,7 +27,28 @@ app.use(
     },
   }),
 );
-app.use(cors({ credentials: true, origin: true }));
+// Cookie-authenticated requests must not be readable by arbitrary origins.
+// `CORS_ALLOWED_ORIGINS` (comma-separated) closes the API to everything else;
+// requests with no Origin header (same-origin fetches, curl, the Vite dev proxy)
+// are always allowed. When the variable is unset the previous permissive
+// behavior is kept so existing deployments are not changed underneath them.
+const corsAllowedOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    credentials: true,
+    origin(origin, callback) {
+      if (!origin || corsAllowedOrigins.length === 0) {
+        callback(null, true);
+        return;
+      }
+      callback(null, corsAllowedOrigins.includes(origin));
+    },
+  }),
+);
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

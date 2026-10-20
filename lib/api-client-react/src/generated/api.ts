@@ -20,6 +20,9 @@ import type {
   AuthUserEnvelope,
   DashboardFollowups,
   ErrorEnvelope,
+  EvidenceInput,
+  EvidenceItem,
+  EvidenceUpdate,
   FollowUp,
   HealthStatus,
   Lead,
@@ -30,6 +33,7 @@ import type {
   LogInRequest,
   LogoutSuccess,
   SignUpRequest,
+  SignupAvailability,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -442,6 +446,82 @@ export const useLogOut = <
 > => {
   return useMutation(getLogOutMutationOptions(options));
 };
+
+/**
+ * This is a private, single-operator workspace. Sign-up is open only while the workspace has no accounts yet, or for emails explicitly allowed by configuration.
+ * @summary Whether this workspace currently accepts new accounts
+ */
+export const getGetSignupAvailabilityUrl = () => {
+  return `/api/auth/signup-availability`;
+};
+
+export const getSignupAvailability = async (
+  options?: RequestInit,
+): Promise<SignupAvailability> => {
+  return customFetch<SignupAvailability>(getGetSignupAvailabilityUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetSignupAvailabilityQueryKey = () => {
+  return [`/api/auth/signup-availability`] as const;
+};
+
+export const getGetSignupAvailabilityQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSignupAvailability>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSignupAvailability>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetSignupAvailabilityQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getSignupAvailability>>
+  > = ({ signal }) => getSignupAvailability({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSignupAvailability>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSignupAvailabilityQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSignupAvailability>>
+>;
+export type GetSignupAvailabilityQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Whether this workspace currently accepts new accounts
+ */
+
+export function useGetSignupAvailability<
+  TData = Awaited<ReturnType<typeof getSignupAvailability>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSignupAvailability>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSignupAvailabilityQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * Returns aggregated stats - niche breakdown, DM status counts, pipeline status counts, priority distribution
@@ -1034,6 +1114,439 @@ export function useGetLeadFollowups<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List evidence captured about a creator
+ */
+export const getListLeadEvidenceUrl = (id: number) => {
+  return `/api/leads/${id}/evidence`;
+};
+
+export const listLeadEvidence = async (
+  id: number,
+  options?: RequestInit,
+): Promise<EvidenceItem[]> => {
+  return customFetch<EvidenceItem[]>(getListLeadEvidenceUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListLeadEvidenceQueryKey = (id: number) => {
+  return [`/api/leads/${id}/evidence`] as const;
+};
+
+export const getListLeadEvidenceQueryOptions = <
+  TData = Awaited<ReturnType<typeof listLeadEvidence>>,
+  TError = ErrorType<ErrorEnvelope>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listLeadEvidence>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListLeadEvidenceQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listLeadEvidence>>
+  > = ({ signal }) => listLeadEvidence(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listLeadEvidence>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListLeadEvidenceQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listLeadEvidence>>
+>;
+export type ListLeadEvidenceQueryError = ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary List evidence captured about a creator
+ */
+
+export function useListLeadEvidence<
+  TData = Awaited<ReturnType<typeof listLeadEvidence>>,
+  TError = ErrorType<ErrorEnvelope>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listLeadEvidence>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListLeadEvidenceQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * The owner is derived from the session and the creator is verified to belong to that owner; client-supplied ids are not trusted.
+ * @summary Record evidence about a creator
+ */
+export const getCreateLeadEvidenceUrl = (id: number) => {
+  return `/api/leads/${id}/evidence`;
+};
+
+export const createLeadEvidence = async (
+  id: number,
+  evidenceInput: EvidenceInput,
+  options?: RequestInit,
+): Promise<EvidenceItem> => {
+  return customFetch<EvidenceItem>(getCreateLeadEvidenceUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(evidenceInput),
+  });
+};
+
+export const getCreateLeadEvidenceMutationOptions = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createLeadEvidence>>,
+    TError,
+    { id: number; data: BodyType<EvidenceInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createLeadEvidence>>,
+  TError,
+  { id: number; data: BodyType<EvidenceInput> },
+  TContext
+> => {
+  const mutationKey = ["createLeadEvidence"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createLeadEvidence>>,
+    { id: number; data: BodyType<EvidenceInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return createLeadEvidence(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateLeadEvidenceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createLeadEvidence>>
+>;
+export type CreateLeadEvidenceMutationBody = BodyType<EvidenceInput>;
+export type CreateLeadEvidenceMutationError = ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary Record evidence about a creator
+ */
+export const useCreateLeadEvidence = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createLeadEvidence>>,
+    TError,
+    { id: number; data: BodyType<EvidenceInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createLeadEvidence>>,
+  TError,
+  { id: number; data: BodyType<EvidenceInput> },
+  TContext
+> => {
+  return useMutation(getCreateLeadEvidenceMutationOptions(options));
+};
+
+/**
+ * @summary Get one evidence item
+ */
+export const getGetEvidenceItemUrl = (id: number) => {
+  return `/api/evidence/${id}`;
+};
+
+export const getEvidenceItem = async (
+  id: number,
+  options?: RequestInit,
+): Promise<EvidenceItem> => {
+  return customFetch<EvidenceItem>(getGetEvidenceItemUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetEvidenceItemQueryKey = (id: number) => {
+  return [`/api/evidence/${id}`] as const;
+};
+
+export const getGetEvidenceItemQueryOptions = <
+  TData = Awaited<ReturnType<typeof getEvidenceItem>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getEvidenceItem>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetEvidenceItemQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getEvidenceItem>>> = ({
+    signal,
+  }) => getEvidenceItem(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getEvidenceItem>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetEvidenceItemQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getEvidenceItem>>
+>;
+export type GetEvidenceItemQueryError = ErrorType<void>;
+
+/**
+ * @summary Get one evidence item
+ */
+
+export function useGetEvidenceItem<
+  TData = Awaited<ReturnType<typeof getEvidenceItem>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getEvidenceItem>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetEvidenceItemQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update an evidence item
+ */
+export const getUpdateEvidenceItemUrl = (id: number) => {
+  return `/api/evidence/${id}`;
+};
+
+export const updateEvidenceItem = async (
+  id: number,
+  evidenceUpdate: EvidenceUpdate,
+  options?: RequestInit,
+): Promise<EvidenceItem> => {
+  return customFetch<EvidenceItem>(getUpdateEvidenceItemUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(evidenceUpdate),
+  });
+};
+
+export const getUpdateEvidenceItemMutationOptions = <
+  TError = ErrorType<ErrorEnvelope | void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateEvidenceItem>>,
+    TError,
+    { id: number; data: BodyType<EvidenceUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateEvidenceItem>>,
+  TError,
+  { id: number; data: BodyType<EvidenceUpdate> },
+  TContext
+> => {
+  const mutationKey = ["updateEvidenceItem"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateEvidenceItem>>,
+    { id: number; data: BodyType<EvidenceUpdate> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateEvidenceItem(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateEvidenceItemMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateEvidenceItem>>
+>;
+export type UpdateEvidenceItemMutationBody = BodyType<EvidenceUpdate>;
+export type UpdateEvidenceItemMutationError = ErrorType<ErrorEnvelope | void>;
+
+/**
+ * @summary Update an evidence item
+ */
+export const useUpdateEvidenceItem = <
+  TError = ErrorType<ErrorEnvelope | void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateEvidenceItem>>,
+    TError,
+    { id: number; data: BodyType<EvidenceUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateEvidenceItem>>,
+  TError,
+  { id: number; data: BodyType<EvidenceUpdate> },
+  TContext
+> => {
+  return useMutation(getUpdateEvidenceItemMutationOptions(options));
+};
+
+/**
+ * @summary Delete an evidence item
+ */
+export const getDeleteEvidenceItemUrl = (id: number) => {
+  return `/api/evidence/${id}`;
+};
+
+export const deleteEvidenceItem = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteEvidenceItemUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteEvidenceItemMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteEvidenceItem>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteEvidenceItem>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteEvidenceItem"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteEvidenceItem>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteEvidenceItem(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteEvidenceItemMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteEvidenceItem>>
+>;
+
+export type DeleteEvidenceItemMutationError = ErrorType<void>;
+
+/**
+ * @summary Delete an evidence item
+ */
+export const useDeleteEvidenceItem = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteEvidenceItem>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteEvidenceItem>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteEvidenceItemMutationOptions(options));
+};
 
 /**
  * @summary List pending follow-ups for current user, grouped by urgency

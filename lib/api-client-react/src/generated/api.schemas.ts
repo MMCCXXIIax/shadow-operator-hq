@@ -199,6 +199,91 @@ export interface StatusCount {
   count: number;
 }
 
+export interface SignupAvailability {
+  open: boolean;
+}
+
+export type EvidenceType = (typeof EvidenceType)[keyof typeof EvidenceType];
+
+export const EvidenceType = {
+  public_bio: "public_bio",
+  public_post: "public_post",
+  visible_metric: "visible_metric",
+  audience_question: "audience_question",
+  creator_provided: "creator_provided",
+  other: "other",
+} as const;
+
+export type EvidenceVerificationStatus =
+  (typeof EvidenceVerificationStatus)[keyof typeof EvidenceVerificationStatus];
+
+export const EvidenceVerificationStatus = {
+  unverified: "unverified",
+  creator_stated: "creator_stated",
+  verified: "verified",
+  disputed: "disputed",
+} as const;
+
+export type EvidenceRetrievalMethod =
+  (typeof EvidenceRetrievalMethod)[keyof typeof EvidenceRetrievalMethod];
+
+export const EvidenceRetrievalMethod = {
+  manual_entry: "manual_entry",
+  screenshot: "screenshot",
+  creator_message: "creator_message",
+  api: "api",
+  other: "other",
+} as const;
+
+export interface EvidenceItem {
+  id: number;
+  leadId: number;
+  userId: string;
+  evidenceType: EvidenceType;
+  /** @nullable */
+  sourceUrl?: string | null;
+  /** @nullable */
+  sourceDescription?: string | null;
+  capturedAt: string;
+  content: string;
+  verificationStatus: EvidenceVerificationStatus;
+  retrievalMethod: EvidenceRetrievalMethod;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EvidenceInput {
+  evidenceType: EvidenceType;
+  /** @minLength 1 */
+  content: string;
+  /** @nullable */
+  sourceUrl?: string | null;
+  /** @nullable */
+  sourceDescription?: string | null;
+  capturedAt?: string;
+  verificationStatus?: EvidenceVerificationStatus;
+  retrievalMethod?: EvidenceRetrievalMethod;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export interface EvidenceUpdate {
+  evidenceType?: EvidenceType;
+  /** @minLength 1 */
+  content?: string;
+  /** @nullable */
+  sourceUrl?: string | null;
+  /** @nullable */
+  sourceDescription?: string | null;
+  capturedAt?: string;
+  verificationStatus?: EvidenceVerificationStatus;
+  retrievalMethod?: EvidenceRetrievalMethod;
+  /** @nullable */
+  notes?: string | null;
+}
+
 export interface LeadStats {
   totalLeads: number;
   callsBooked: number;

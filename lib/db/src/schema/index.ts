@@ -19,4 +19,5 @@
 
 export * from "./leads";
 export * from "./followups";
+export * from "./evidence";
 export * from "./auth";

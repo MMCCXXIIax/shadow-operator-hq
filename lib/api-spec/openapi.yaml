@@ -16,6 +16,8 @@ tags:
     description: Lead management operations
   - name: followups
     description: Follow-up management operations
+  - name: evidence
+    description: Evidence captured about a creator, with provenance
 paths:
   /healthz:
     get:
@@ -68,6 +70,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: This private workspace is not accepting new accounts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
         '409':
           description: Email already registered.
           content:
@@ -112,6 +120,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LogoutSuccess'
+
+  /auth/signup-availability:
+    get:
+      tags: [Auth]
+      operationId: getSignupAvailability
+      summary: Whether this workspace currently accepts new accounts
+      description: This is a private, single-operator workspace. Sign-up is open only while the workspace has no accounts yet, or for emails explicitly allowed by configuration.
+      responses:
+        '200':
+          description: Sign-up availability resolved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignupAvailability'
 
   /leads/stats:
     get:
@@ -278,6 +300,136 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+
+  /leads/{id}/evidence:
+    get:
+      operationId: listLeadEvidence
+      tags: [evidence]
+      summary: List evidence captured about a creator
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Evidence items, newest capture first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EvidenceItem"
+        "404":
+          description: Creator not found for this user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    post:
+      operationId: createLeadEvidence
+      tags: [evidence]
+      summary: Record evidence about a creator
+      description: The owner is derived from the session and the creator is verified to belong to that owner; client-supplied ids are not trusted.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvidenceInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvidenceItem"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Creator not found for this user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /evidence/{id}:
+    get:
+      operationId: getEvidenceItem
+      tags: [evidence]
+      summary: Get one evidence item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Evidence item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvidenceItem"
+        "404":
+          description: Not found for this user
+    patch:
+      operationId: updateEvidenceItem
+      tags: [evidence]
+      summary: Update an evidence item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvidenceUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvidenceItem"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Not found for this user
+    delete:
+      operationId: deleteEvidenceItem
+      tags: [evidence]
+      summary: Delete an evidence item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found for this user
 
   /followups:
     get:
@@ -623,6 +775,131 @@ components:
           $ref: "#/components/schemas/LeadStatus"
         count:
           type: integer
+
+    SignupAvailability:
+      type: object
+      required: [open]
+      properties:
+        open:
+          type: boolean
+
+    EvidenceType:
+      type: string
+      enum:
+        - public_bio
+        - public_post
+        - visible_metric
+        - audience_question
+        - creator_provided
+        - other
+
+    EvidenceVerificationStatus:
+      type: string
+      enum:
+        - unverified
+        - creator_stated
+        - verified
+        - disputed
+
+    EvidenceRetrievalMethod:
+      type: string
+      enum:
+        - manual_entry
+        - screenshot
+        - creator_message
+        - api
+        - other
+
+    EvidenceItem:
+      type: object
+      required:
+        - id
+        - leadId
+        - userId
+        - evidenceType
+        - capturedAt
+        - content
+        - verificationStatus
+        - retrievalMethod
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+        leadId:
+          type: integer
+        userId:
+          type: string
+        evidenceType:
+          $ref: "#/components/schemas/EvidenceType"
+        sourceUrl:
+          type: ["string", "null"]
+        sourceDescription:
+          type: ["string", "null"]
+        capturedAt:
+          type: string
+          format: date-time
+        content:
+          type: string
+        verificationStatus:
+          $ref: "#/components/schemas/EvidenceVerificationStatus"
+        retrievalMethod:
+          $ref: "#/components/schemas/EvidenceRetrievalMethod"
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    EvidenceInput:
+      type: object
+      required:
+        - evidenceType
+        - content
+      properties:
+        evidenceType:
+          $ref: "#/components/schemas/EvidenceType"
+        content:
+          type: string
+          minLength: 1
+        sourceUrl:
+          type: ["string", "null"]
+        sourceDescription:
+          type: ["string", "null"]
+        capturedAt:
+          type: string
+          format: date-time
+        verificationStatus:
+          $ref: "#/components/schemas/EvidenceVerificationStatus"
+        retrievalMethod:
+          $ref: "#/components/schemas/EvidenceRetrievalMethod"
+        notes:
+          type: ["string", "null"]
+
+    EvidenceUpdate:
+      type: object
+      properties:
+        evidenceType:
+          $ref: "#/components/schemas/EvidenceType"
+        content:
+          type: string
+          minLength: 1
+        sourceUrl:
+          type: ["string", "null"]
+        sourceDescription:
+          type: ["string", "null"]
+        capturedAt:
+          type: string
+          format: "date-time"
+        verificationStatus:
+          $ref: "#/components/schemas/EvidenceVerificationStatus"
+        retrievalMethod:
+          $ref: "#/components/schemas/EvidenceRetrievalMethod"
+        notes:
+          type: ["string", "null"]
 
     LeadStats:
       type: object

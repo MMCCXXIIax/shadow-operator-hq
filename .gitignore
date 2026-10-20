@@ -13,6 +13,9 @@ node_modules
 # pnpm content-addressable store created inside the workspace by the Base44 dev stack
 /.pnpm-store/
 
+# local database dumps produced by scripts/db-backup.sh (never commit data)
+/backups/
+
 # IDEs and editors
 /.idea
 .project

@@ -81,7 +81,7 @@ export default function Dashboard() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Command Center</h1>
-          <p className="text-muted-foreground">Pipeline health, outreach metrics, and follow-up urgency</p>
+          <p className="text-muted-foreground">Creator pipeline health, outreach metrics, and follow-up urgency</p>
         </div>
         {overdueCount > 0 && (
           <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-xs font-bold">
@@ -94,7 +94,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Leads</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Creators</CardTitle>
             <Users className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
