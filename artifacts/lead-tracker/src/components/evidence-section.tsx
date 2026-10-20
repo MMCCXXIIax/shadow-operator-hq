@@ -12,7 +12,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +33,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ExternalLink, FileSearch, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -117,6 +127,7 @@ export function EvidenceSection({ leadId, leadName }: { leadId: number; leadName
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<EvidenceItem | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<EvidenceItem | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [error, setError] = useState("");
 
@@ -246,7 +257,7 @@ export function EvidenceSection({ leadId, leadName }: { leadId: number; leadName
                       variant="ghost"
                       size="icon"
                       className="size-7 text-destructive hover:text-destructive"
-                      onClick={() => deleteEvidence.mutate({ id: item.id })}
+                      onClick={() => setPendingDelete(item)}
                       disabled={deleteEvidence.isPending}
                       title="Delete evidence"
                     >
@@ -411,6 +422,31 @@ export function EvidenceSection({ leadId, leadName }: { leadId: number; leadName
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this evidence?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {`It will be removed from ${leadName}'s record permanently. What you observed cannot be recovered if you change your mind.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={buttonVariants({ variant: "destructive" })}
+              onClick={() => {
+                if (pendingDelete) {
+                  deleteEvidence.mutate({ id: pendingDelete.id });
+                }
+                setPendingDelete(null);
+              }}
+            >
+              Delete evidence
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
