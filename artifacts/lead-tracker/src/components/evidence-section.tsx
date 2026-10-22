@@ -121,7 +121,7 @@ export function EvidenceSection({ leadId, leadName }: { leadId: number; leadName
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: items, isLoading } = useListLeadEvidence(leadId, {
+  const { data: items, isLoading, isError, refetch } = useListLeadEvidence(leadId, {
     query: { enabled: !!leadId, queryKey: getListLeadEvidenceQueryKey(leadId) },
   });
 
@@ -227,6 +227,13 @@ export function EvidenceSection({ leadId, leadName }: { leadId: number; leadName
           <div className="space-y-2">
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-16 w-full" />
+          </div>
+        ) : isError ? (
+          <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-6 text-center">
+            <p className="text-sm text-destructive">Could not load evidence for this creator.</p>
+            <Button variant="outline" size="sm" className="mt-3" onClick={() => refetch()}>
+              Try again
+            </Button>
           </div>
         ) : !items || items.length === 0 ? (
           <div className="rounded-lg border border-dashed p-6 text-center">
