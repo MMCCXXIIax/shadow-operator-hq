@@ -11,7 +11,7 @@ docker compose -f docker-compose.base44.yml up -d --build
 | Service | What it does |
 | --- | --- |
 | `db` | `postgres:16`, dev credentials `app/app/app`, volume `db-data` |
-| `setup` | one-shot: `pnpm install --frozen-lockfile` + `drizzle-kit push` (must exit 0 before the apps start) |
+| `setup` | one-shot: `pnpm install --frozen-lockfile`, then checked-in SQL migrations (`@workspace/db run migrate`), then a **non-forced** `drizzle-kit push` (must exit 0 before the apps start) |
 | `api` | `pnpm --filter @workspace/api-server run dev` (Express on `:8080`), built by esbuild |
 | `web` | `pnpm --filter @workspace/lead-tracker run dev` (Vite, published on host `:3000`) |
 
@@ -38,10 +38,19 @@ pnpm -r --if-present run build   # what the root build script runs per package
 - `artifacts/*/vite.config.ts` read `PORT` and `BASE_PATH`. They are set by the Replit dev workflows only, so the configs **fall back to defaults** (`5173`/`5174`, base `/`) rather than throwing when a plain build runs without them.
 - `pnpm --filter <name>` works both with the package name (`@workspace/db`) and the directory name (`db`); `scripts/post-merge.sh` relies on the latter.
 
+## Schema changes
+
+- Anything that matters gets a numbered file in `lib/db/migrations/` (currently `0001_evidence_items.sql`). `lib/db/scripts/migrate.mjs` applies them in filename order, each in a transaction with its `schema_migrations` row, so a failure leaves the DB untouched and a rerun is a no-op.
+- `setup` runs migrations **before** `drizzle-kit push`. `push` is non-forced here on purpose: a destructive drift must stop the setup service instead of dropping data. Never use `push-force` (or `drizzle-kit push --force`) against this database.
+- To add one: write the next `NNNN_name.sql`, restart setup — `docker compose -f docker-compose.base44.yml run --rm --no-deps setup` — and check the log line `Migrations: applied …`.
+- Tables managed outside Drizzle (e.g. `bookkeeping_*`) are deliberately absent from the Drizzle schema; a plain `push` will offer to drop them. Leave them out of `lib/db/src/schema/`.
+
 ## Verifying a change
 
 1. `docker compose -f docker-compose.base44.yml ps` — `db` healthy, `setup` exited 0, `api`/`web` healthy.
 2. `curl -s localhost:3000/` returns the app shell, `curl -s localhost:3000/api/healthz` returns `{"status":"ok"}` through the Vite proxy.
 3. In the browser: the signed-out landing page renders; signing up (the app's own form) leads to the "Command Center" dashboard with the first-run tour, and `/leads` lists leads. Accounts are created through the UI — there is no seed data, and every lead is owned by its creator.
-4. `pnpm run build` must exit 0 (run it in a container: `docker compose -f docker-compose.base44.yml run --rm --no-deps --entrypoint sh setup -c "npm i -g pnpm@10 >/dev/null && cd /app && pnpm run build"`).
-5. Recovery path: `scripts/db-backup.sh` writes a gzipped dump; `scripts/db-restore.sh <dump> --verify-only` loads it into a throwaway `shadowos_restore_check` database, prints row counts and drops it, so the drill never touches live data. Restoring over the live `app` database is manual on purpose — see the script header.
+   - Signup is **closed as soon as one account exists** (`/api/auth/signup-availability` is true only while `users` is empty or `ALLOWED_SIGNUP_EMAILS` lists the address). So signed-in screens can only be checked automatically through a replayed preview session; otherwise verify the signed-out landing page and report the rest as not automatically verified.
+4. The creator detail page (`/leads/:id`) ends with the Evidence card (`artifacts/lead-tracker/src/components/evidence-section.tsx`): "Add evidence" opens a dialog, the trash icon opens an AlertDialog that must be confirmed before `DELETE /api/evidence/:id` fires. Deleting the creator removes its evidence.
+5. `pnpm run build` must exit 0 (run it in a container: `docker compose -f docker-compose.base44.yml run --rm --no-deps --entrypoint sh setup -c "npm i -g pnpm@10 >/dev/null && cd /app && pnpm run build"`).
+6. Recovery path: `scripts/db-backup.sh` writes a gzipped dump; `scripts/db-restore.sh <dump> --verify-only` loads it into a throwaway `shadowos_restore_check` database, prints row counts and drops it, so the drill never touches live data. Restoring over the live `app` database is manual on purpose — see the script header.
