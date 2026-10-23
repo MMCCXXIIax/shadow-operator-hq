@@ -697,6 +697,169 @@ export const RetryScanResponse = zod.object({
 });
 
 /**
+ * Returns the report recorded for the newest attempt of this scan. A report
+is `complete` only when every section was populated from evidence owned by
+the same account and creator and passed validation; otherwise it is
+`incomplete` and each unproduced section says why. `404` means no report
+has been recorded for this scan.
+
+ * @summary Get the latest attempt's Creator Intelligence Report
+ */
+export const GetScanReportParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetScanReportResponse = zod.object({
+  id: zod.number(),
+  scanJobId: zod.number(),
+  userId: zod.string(),
+  leadId: zod.number().nullable(),
+  attempt: zod.number(),
+  status: zod.enum(["incomplete", "complete"]),
+  generator: zod.string(),
+  generatorVersion: zod.string(),
+  sections: zod.array(
+    zod.object({
+      key: zod.enum([
+        "creator_profile",
+        "creator_potential",
+        "audience_signals",
+        "monetization_gap",
+        "product_concepts",
+        "recommended_opportunity",
+        "outreach_draft",
+      ]),
+      title: zod.string(),
+      status: zod.enum(["insufficient_evidence", "complete"]),
+      reason: zod.string().nullable(),
+      findings: zod.array(
+        zod.object({
+          id: zod.string(),
+          statement: zod.string(),
+          evidenceIds: zod.array(zod.number()),
+          confidence: zod.enum(["high", "medium", "low"]),
+          limitations: zod.array(zod.string()),
+        }),
+      ),
+      assumptions: zod.array(zod.string()),
+      limitations: zod.array(zod.string()),
+      verdict: zod
+        .union([
+          zod.literal("high"),
+          zod.literal("medium"),
+          zod.literal("low"),
+          zod.literal("undetermined"),
+          zod.literal(null),
+        ])
+        .nullable(),
+      concepts: zod.array(
+        zod.object({
+          id: zod.string(),
+          name: zod.string(),
+          format: zod.enum([
+            "template_pack",
+            "mini_course",
+            "cohort",
+            "subscription",
+            "guide",
+            "toolkit",
+            "service",
+            "other",
+          ]),
+          whoItServes: zod.string(),
+          rationale: zod.string(),
+          findingIds: zod.array(zod.string()),
+          status: zod.enum(["hypothesis"]),
+        }),
+      ),
+      recommended: zod.union([
+        zod.object({
+          conceptId: zod.string(),
+          rationale: zod.string(),
+          findingIds: zod.array(zod.string()),
+          assumptions: zod.array(zod.string()),
+        }),
+        zod.null(),
+      ]),
+      outreach: zod.union([
+        zod.object({
+          channel: zod.enum(["instagram_dm"]),
+          body: zod.string(),
+          findingIds: zod.array(zod.string()),
+          claimsToVerify: zod.array(zod.string()),
+        }),
+        zod.null(),
+      ]),
+    }),
+  ),
+  limitations: zod.array(zod.string()),
+  coverage: zod.array(
+    zod.object({
+      sectionKey: zod.enum([
+        "creator_profile",
+        "creator_potential",
+        "audience_signals",
+        "monetization_gap",
+        "product_concepts",
+        "recommended_opportunity",
+        "outreach_draft",
+      ]),
+      title: zod.string(),
+      state: zod.enum(["insufficient_evidence", "complete"]),
+      reason: zod.string().nullable(),
+    }),
+  ),
+  blockedBy: zod.union([
+    zod.object({
+      stageKey: zod.string(),
+      code: zod.string(),
+      message: zod.string(),
+      detail: zod.string(),
+    }),
+    zod.null(),
+  ]),
+  evidence: zod.array(
+    zod.object({
+      id: zod.number(),
+      leadId: zod.number(),
+      userId: zod.string(),
+      evidenceType: zod.enum([
+        "public_bio",
+        "public_post",
+        "visible_metric",
+        "audience_question",
+        "creator_provided",
+        "other",
+      ]),
+      sourceUrl: zod.string().nullish(),
+      sourceDescription: zod.string().nullish(),
+      capturedAt: zod.coerce.date(),
+      content: zod.string(),
+      verificationStatus: zod.enum([
+        "unverified",
+        "creator_stated",
+        "verified",
+        "disputed",
+      ]),
+      retrievalMethod: zod.enum([
+        "manual_entry",
+        "screenshot",
+        "creator_message",
+        "api",
+        "other",
+      ]),
+      notes: zod.string().nullish(),
+      createdAt: zod.coerce.date(),
+      updatedAt: zod.coerce.date(),
+    }),
+  ),
+  missingEvidenceIds: zod.array(zod.number()),
+  generatedAt: zod.coerce.date().nullable(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
  * @summary Report which Instagram integration settings are present, never their values
  */
 export const GetInstagramStatusResponse = zod.object({

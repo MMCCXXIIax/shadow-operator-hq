@@ -359,6 +359,171 @@ export interface ScanJob {
   updatedAt: string;
 }
 
+export type ScanReportStatus =
+  (typeof ScanReportStatus)[keyof typeof ScanReportStatus];
+
+export const ScanReportStatus = {
+  incomplete: "incomplete",
+  complete: "complete",
+} as const;
+
+export type ScanReportSectionState =
+  (typeof ScanReportSectionState)[keyof typeof ScanReportSectionState];
+
+export const ScanReportSectionState = {
+  insufficient_evidence: "insufficient_evidence",
+  complete: "complete",
+} as const;
+
+export type ScanReportSectionKey =
+  (typeof ScanReportSectionKey)[keyof typeof ScanReportSectionKey];
+
+export const ScanReportSectionKey = {
+  creator_profile: "creator_profile",
+  creator_potential: "creator_potential",
+  audience_signals: "audience_signals",
+  monetization_gap: "monetization_gap",
+  product_concepts: "product_concepts",
+  recommended_opportunity: "recommended_opportunity",
+  outreach_draft: "outreach_draft",
+} as const;
+
+export type ScanReportConfidence =
+  (typeof ScanReportConfidence)[keyof typeof ScanReportConfidence];
+
+export const ScanReportConfidence = {
+  high: "high",
+  medium: "medium",
+  low: "low",
+} as const;
+
+export interface ScanReportFinding {
+  id: string;
+  statement: string;
+  evidenceIds: number[];
+  confidence: ScanReportConfidence;
+  limitations: string[];
+}
+
+export type ScanReportProductConceptFormat =
+  (typeof ScanReportProductConceptFormat)[keyof typeof ScanReportProductConceptFormat];
+
+export const ScanReportProductConceptFormat = {
+  template_pack: "template_pack",
+  mini_course: "mini_course",
+  cohort: "cohort",
+  subscription: "subscription",
+  guide: "guide",
+  toolkit: "toolkit",
+  service: "service",
+  other: "other",
+} as const;
+
+export type ScanReportProductConceptStatus =
+  (typeof ScanReportProductConceptStatus)[keyof typeof ScanReportProductConceptStatus];
+
+export const ScanReportProductConceptStatus = {
+  hypothesis: "hypothesis",
+} as const;
+
+export interface ScanReportProductConcept {
+  id: string;
+  name: string;
+  format: ScanReportProductConceptFormat;
+  whoItServes: string;
+  rationale: string;
+  findingIds: string[];
+  status: ScanReportProductConceptStatus;
+}
+
+export interface ScanReportRecommendation {
+  conceptId: string;
+  rationale: string;
+  findingIds: string[];
+  assumptions: string[];
+}
+
+export type ScanReportOutreachChannel =
+  (typeof ScanReportOutreachChannel)[keyof typeof ScanReportOutreachChannel];
+
+export const ScanReportOutreachChannel = {
+  instagram_dm: "instagram_dm",
+} as const;
+
+export interface ScanReportOutreach {
+  channel: ScanReportOutreachChannel;
+  body: string;
+  findingIds: string[];
+  claimsToVerify: string[];
+}
+
+/**
+ * @nullable
+ */
+export type ScanReportSectionVerdict =
+  | (typeof ScanReportSectionVerdict)[keyof typeof ScanReportSectionVerdict]
+  | null;
+
+export const ScanReportSectionVerdict = {
+  high: "high",
+  medium: "medium",
+  low: "low",
+  undetermined: "undetermined",
+} as const;
+
+export interface ScanReportSection {
+  key: ScanReportSectionKey;
+  title: string;
+  status: ScanReportSectionState;
+  /** @nullable */
+  reason: string | null;
+  findings: ScanReportFinding[];
+  assumptions: string[];
+  limitations: string[];
+  /** @nullable */
+  verdict: ScanReportSectionVerdict;
+  concepts: ScanReportProductConcept[];
+  recommended: ScanReportRecommendation | null;
+  outreach: ScanReportOutreach | null;
+}
+
+export interface ScanReportCoverageEntry {
+  sectionKey: ScanReportSectionKey;
+  title: string;
+  state: ScanReportSectionState;
+  /** @nullable */
+  reason: string | null;
+}
+
+export interface ScanReportBlockedBy {
+  stageKey: string;
+  code: string;
+  message: string;
+  detail: string;
+}
+
+export interface ScanReport {
+  id: number;
+  scanJobId: number;
+  userId: string;
+  /** @nullable */
+  leadId: number | null;
+  attempt: number;
+  status: ScanReportStatus;
+  generator: string;
+  generatorVersion: string;
+  sections: ScanReportSection[];
+  limitations: string[];
+  coverage: ScanReportCoverageEntry[];
+  blockedBy: ScanReportBlockedBy | null;
+  evidence: EvidenceItem[];
+  missingEvidenceIds: number[];
+  /** @nullable */
+  generatedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface InstagramConfigCheck {
   name: string;
   present: boolean;

@@ -8,6 +8,7 @@ import {
   type ScanStageState,
 } from "@workspace/db";
 import { instagramConfigStatus } from "../instagram/config";
+import { saveBlockedReport } from "../report/persist";
 import { initialStages } from "./stages";
 
 async function persist(jobId: number, patch: Partial<typeof scanJobsTable.$inferInsert>): Promise<void> {
@@ -20,7 +21,7 @@ async function persist(jobId: number, patch: Partial<typeof scanJobsTable.$infer
 // A stage that could not run marks itself failed and leaves every later stage
 // skipped: the report is never presented as complete when a step was missing.
 async function block(
-  jobId: number,
+  job: ScanJob,
   stages: ScanStageState[],
   stageKey: ScanStageKey,
   error: { code: string; message: string; detail: string },
@@ -34,13 +35,18 @@ async function block(
     }
   }
 
-  await persist(jobId, {
+  await persist(job.id, {
     status: "blocked",
     currentStage: stageKey,
     stages,
     errorCode: error.code,
     errorMessage: error.message,
   });
+
+  // Every attempt leaves a durable, explicitly incomplete report record saying
+  // what could not be produced. It is never a partially researched report, and
+  // a failure to write it must not wedge the scan state machine.
+  await saveBlockedReport(job, { stageKey, ...error }).catch(() => undefined);
 }
 
 /**
@@ -86,13 +92,15 @@ export async function runScanJob(jobId: number): Promise<void> {
 
     if (existing) {
       await persist(jobId, { leadId: existing.id });
+      // Keep the in-memory row in step so the blocked report links to the creator.
+      job.leadId = existing.id;
     }
 
     const config = instagramConfigStatus();
     const missing = config.checks.filter((check) => !check.present).map((check) => check.name);
 
     if (!config.configured) {
-      await block(jobId, stages, "resolve_profile", {
+      await block(job, stages, "resolve_profile", {
         code: "instagram_not_configured",
         message: `Missing server-side configuration${
           missing.length > 0 ? `: ${missing.join(", ")}` : ""
@@ -104,7 +112,7 @@ export async function runScanJob(jobId: number): Promise<void> {
 
     // Credentials alone are not a data source: the Business Discovery adapter is
     // still to be built, and saying so is better than returning a thin report.
-    await block(jobId, stages, "resolve_profile", {
+    await block(job, stages, "resolve_profile", {
       code: "research_adapter_pending",
       message:
         "Meta credentials are present, but the Instagram Business Discovery research adapter is not implemented yet, so no profile or content data can be retrieved.",

@@ -21,4 +21,5 @@ export * from "./leads";
 export * from "./followups";
 export * from "./evidence";
 export * from "./scans";
+export * from "./reports";
 export * from "./auth";

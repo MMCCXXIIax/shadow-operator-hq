@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SCAN_STATUS_STYLES } from "@/components/new-scan-panel";
+import { ScanReportPanel } from "@/components/scan-report";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -196,6 +197,8 @@ export default function ScanDetail() {
           ))}
         </CardContent>
       </Card>
+
+      <ScanReportPanel scanId={scanId} scanStatus={scan.status} />
     </div>
   );
 }

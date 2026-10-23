@@ -35,6 +35,7 @@ import type {
   LogoutSuccess,
   ScanInput,
   ScanJob,
+  ScanReport,
   SignUpRequest,
   SignupAvailability,
 } from "./api.schemas";
@@ -2022,6 +2023,99 @@ export const useRetryScan = <
 > => {
   return useMutation(getRetryScanMutationOptions(options));
 };
+
+/**
+ * Returns the report recorded for the newest attempt of this scan. A report
+is `complete` only when every section was populated from evidence owned by
+the same account and creator and passed validation; otherwise it is
+`incomplete` and each unproduced section says why. `404` means no report
+has been recorded for this scan.
+
+ * @summary Get the latest attempt's Creator Intelligence Report
+ */
+export const getGetScanReportUrl = (id: number) => {
+  return `/api/scans/${id}/report`;
+};
+
+export const getScanReport = async (
+  id: number,
+  options?: RequestInit,
+): Promise<ScanReport> => {
+  return customFetch<ScanReport>(getGetScanReportUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetScanReportQueryKey = (id: number) => {
+  return [`/api/scans/${id}/report`] as const;
+};
+
+export const getGetScanReportQueryOptions = <
+  TData = Awaited<ReturnType<typeof getScanReport>>,
+  TError = ErrorType<ErrorEnvelope>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getScanReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetScanReportQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getScanReport>>> = ({
+    signal,
+  }) => getScanReport(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getScanReport>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetScanReportQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getScanReport>>
+>;
+export type GetScanReportQueryError = ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary Get the latest attempt's Creator Intelligence Report
+ */
+
+export function useGetScanReport<
+  TData = Awaited<ReturnType<typeof getScanReport>>,
+  TError = ErrorType<ErrorEnvelope>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getScanReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetScanReportQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Report which Instagram integration settings are present, never their values

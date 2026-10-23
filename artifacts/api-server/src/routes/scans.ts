@@ -4,6 +4,8 @@ import { db, scanJobsTable, type ScanJob } from "@workspace/db";
 import {
   CreateScanBody,
   GetScanParams,
+  GetScanReportParams,
+  GetScanReportResponse,
   GetScanResponse,
   ListScansResponse,
   RetryScanParams,
@@ -12,6 +14,7 @@ import { requireAuth } from "../lib/route-auth";
 import { normalizeInstagramHandle } from "../lib/instagram/handle";
 import { initialStages } from "../lib/scan/stages";
 import { runScanJob } from "../lib/scan/runner";
+import { getLatestReport } from "../lib/report/persist";
 
 const router: IRouter = Router();
 
@@ -138,6 +141,38 @@ router.post("/scans/:id/retry", async (req, res): Promise<void> => {
   res.json(GetScanResponse.parse(serializeScan(scan)));
 
   void runScanJob(scan.id);
+});
+
+// The report for the newest attempt. A report is only ever `complete` if every
+// section passed validation against evidence the same account owns; otherwise
+// it is `incomplete` and names the missing sections and blocker.
+router.get("/scans/:id/report", async (req, res): Promise<void> => {
+  const userId = requireAuth(req, res);
+  if (!userId) return;
+
+  const params = GetScanReportParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [scan] = await db
+    .select({ id: scanJobsTable.id })
+    .from(scanJobsTable)
+    .where(and(eq(scanJobsTable.id, params.data.id), eq(scanJobsTable.userId, userId)));
+
+  if (!scan) {
+    res.status(404).json({ error: "Scan not found" });
+    return;
+  }
+
+  const report = await getLatestReport(scan.id, userId);
+  if (!report) {
+    res.status(404).json({ error: "No report has been recorded for this scan yet." });
+    return;
+  }
+
+  res.json(GetScanReportResponse.parse(report));
 });
 
 export default router;

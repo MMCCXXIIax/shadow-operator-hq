@@ -582,6 +582,43 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
 
+  /scans/{id}/report:
+    get:
+      operationId: getScanReport
+      tags: [scans]
+      summary: Get the latest attempt's Creator Intelligence Report
+      description: |
+        Returns the report recorded for the newest attempt of this scan. A report
+        is `complete` only when every section was populated from evidence owned by
+        the same account and creator and passed validation; otherwise it is
+        `incomplete` and each unproduced section says why. `404` means no report
+        has been recorded for this scan.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Report for the latest attempt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanReport"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: No report for this scan, or the scan is not this user's
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
   /instagram/status:
     get:
       operationId: getInstagramStatus
@@ -1142,6 +1179,269 @@ components:
           type: ["string", "null"]
         attempt:
           type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ScanReportStatus:
+      type: string
+      enum:
+        - incomplete
+        - complete
+
+    ScanReportSectionState:
+      type: string
+      enum:
+        - insufficient_evidence
+        - complete
+
+    ScanReportSectionKey:
+      type: string
+      enum:
+        - creator_profile
+        - creator_potential
+        - audience_signals
+        - monetization_gap
+        - product_concepts
+        - recommended_opportunity
+        - outreach_draft
+
+    ScanReportConfidence:
+      type: string
+      enum:
+        - high
+        - medium
+        - low
+
+    ScanReportFinding:
+      type: object
+      required: [id, statement, evidenceIds, confidence, limitations]
+      properties:
+        id:
+          type: string
+        statement:
+          type: string
+        evidenceIds:
+          type: array
+          items:
+            type: integer
+        confidence:
+          $ref: "#/components/schemas/ScanReportConfidence"
+        limitations:
+          type: array
+          items:
+            type: string
+
+    ScanReportProductConcept:
+      type: object
+      required: [id, name, format, whoItServes, rationale, findingIds, status]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        format:
+          type: string
+          enum:
+            - template_pack
+            - mini_course
+            - cohort
+            - subscription
+            - guide
+            - toolkit
+            - service
+            - other
+        whoItServes:
+          type: string
+        rationale:
+          type: string
+        findingIds:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [hypothesis]
+
+    ScanReportRecommendation:
+      type: object
+      required: [conceptId, rationale, findingIds, assumptions]
+      properties:
+        conceptId:
+          type: string
+        rationale:
+          type: string
+        findingIds:
+          type: array
+          items:
+            type: string
+        assumptions:
+          type: array
+          items:
+            type: string
+
+    ScanReportOutreach:
+      type: object
+      required: [channel, body, findingIds, claimsToVerify]
+      properties:
+        channel:
+          type: string
+          enum: [instagram_dm]
+        body:
+          type: string
+        findingIds:
+          type: array
+          items:
+            type: string
+        claimsToVerify:
+          type: array
+          items:
+            type: string
+
+    ScanReportSection:
+      type: object
+      required:
+        - key
+        - title
+        - status
+        - reason
+        - findings
+        - assumptions
+        - limitations
+        - verdict
+        - concepts
+        - recommended
+        - outreach
+      properties:
+        key:
+          $ref: "#/components/schemas/ScanReportSectionKey"
+        title:
+          type: string
+        status:
+          $ref: "#/components/schemas/ScanReportSectionState"
+        reason:
+          type: ["string", "null"]
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScanReportFinding"
+        assumptions:
+          type: array
+          items:
+            type: string
+        limitations:
+          type: array
+          items:
+            type: string
+        verdict:
+          type: ["string", "null"]
+          enum: [high, medium, low, undetermined, null]
+        concepts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScanReportProductConcept"
+        recommended:
+          oneOf:
+            - $ref: "#/components/schemas/ScanReportRecommendation"
+            - type: "null"
+        outreach:
+          oneOf:
+            - $ref: "#/components/schemas/ScanReportOutreach"
+            - type: "null"
+
+    ScanReportCoverageEntry:
+      type: object
+      required: [sectionKey, title, state, reason]
+      properties:
+        sectionKey:
+          $ref: "#/components/schemas/ScanReportSectionKey"
+        title:
+          type: string
+        state:
+          $ref: "#/components/schemas/ScanReportSectionState"
+        reason:
+          type: ["string", "null"]
+
+    ScanReportBlockedBy:
+      type: object
+      required: [stageKey, code, message, detail]
+      properties:
+        stageKey:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        detail:
+          type: string
+
+    ScanReport:
+      type: object
+      required:
+        - id
+        - scanJobId
+        - userId
+        - leadId
+        - attempt
+        - status
+        - generator
+        - generatorVersion
+        - sections
+        - limitations
+        - coverage
+        - blockedBy
+        - evidence
+        - missingEvidenceIds
+        - generatedAt
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+        scanJobId:
+          type: integer
+        userId:
+          type: string
+        leadId:
+          type: ["integer", "null"]
+        attempt:
+          type: integer
+        status:
+          $ref: "#/components/schemas/ScanReportStatus"
+        generator:
+          type: string
+        generatorVersion:
+          type: string
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScanReportSection"
+        limitations:
+          type: array
+          items:
+            type: string
+        coverage:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScanReportCoverageEntry"
+        blockedBy:
+          oneOf:
+            - $ref: "#/components/schemas/ScanReportBlockedBy"
+            - type: "null"
+        evidence:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvidenceItem"
+        missingEvidenceIds:
+          type: array
+          items:
+            type: integer
+        generatedAt:
+          type: ["string", "null"]
+          format: date-time
         createdAt:
           type: string
           format: date-time

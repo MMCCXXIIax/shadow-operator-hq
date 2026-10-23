@@ -55,7 +55,7 @@ pnpm -r --if-present run build   # what the root build script runs per package
 5. `pnpm run build` must exit 0 (run it in a container: `docker compose -f docker-compose.base44.yml run --rm --no-deps --entrypoint sh setup -c "npm i -g pnpm@10 >/dev/null && cd /app && pnpm run build"`).
 6. Recovery path: `scripts/db-backup.sh` writes a gzipped dump; `scripts/db-restore.sh <dump> --verify-only` loads it into a throwaway `shadowos_restore_check` database, prints row counts and drops it, so the drill never touches live data. Restoring over the live `app` database is manual on purpose — see the script header.
 
-## Creator Intelligence Scan (orchestration only — no research adapter yet)
+## Creator Intelligence Scan (orchestration + report storage; no research adapter yet)
 
 `POST /api/scans` takes one handle or profile URL, normalizes it (`lib/instagram/handle.ts`), persists a `scan_jobs` row and runs the seven approved stages, writing each transition to `scan_jobs.stages` (jsonb). `GET /api/scans`, `GET /api/scans/:id`, `POST /api/scans/:id/retry`.
 
@@ -65,3 +65,14 @@ pnpm -r --if-present run build   # what the root build script runs per package
 - The runner is in-process (`lib/scan/runner.ts`), started after the HTTP response; it persists its own failures, so nothing is left stuck in `running`. Retry resets the stage list and increments `attempt`.
 - Business Discovery cannot return third-party comment text — only captions and like/comment counts. Any Audience Signals section has to say so rather than invent comments.
 - To exercise the signed-in screens by hand, set `ALLOWED_SIGNUP_EMAILS` on the `api` service, create a throwaway account through the app's own form, then **remove the variable and delete that user** (`delete from users where email = …` cascades to its sessions, leads, evidence and scans).
+
+## Creator Intelligence Report (storage + validation; still no generator)
+
+`scan_reports` (`0003_scan_reports.sql`) holds one row per scan **attempt**, keyed by `(scan_job_id, attempt)`. `scan_jobs.attempt` is incremented in place on retry, so retrying never overwrites an earlier attempt's report; `POST /api/scans/:id/retry` itself is unchanged.
+
+- Contract: `lib/api-zod/src/report.ts`, imported as `@workspace/api-zod/report`. It is deliberately **not** re-exported from the package root — orval generates same-named types (`ScanReport`, `ScanReportSection`, …) and the root export collides. Fixed section order, findings that must cite `evidence_items` ids, exactly four distinct product concepts that are always `status: "hypothesis"`, a recommendation that must point at one of them, and an outreach draft whose metric-looking numbers must already appear in the findings it cites.
+- Gate: the contract proves the shape; `artifacts/api-server/src/lib/report/validate.ts` proves the sources (every cited evidence id must exist, belong to the same user and creator). `persist.ts` writes only validated bodies; `status` is `complete` only when every section is complete **and** a real generator produced it.
+- Read: `GET /api/scans/:id/report` returns the latest attempt, `404` when none exists. Citations are resolved live from `evidence_items` (provenance is referenced, never copied); `missingEvidenceIds` flags deleted sources, `coverage` is derived from the sections.
+- Generation is a seam: `lib/report/generate.ts` resolves to a typed `report_generator_unavailable` outcome — never a thrown error — while `getReportGenerator()` returns `null` (no approved provider). A real adapter plugs in there; nothing else in the report path changes.
+- Every blocked scan writes an `incomplete` report for its attempt: `generator: "not_run"`, all seven sections `insufficient_evidence`, `blockedBy` = the stage blocker. It is a record of what could not be produced and must never be rendered as a research report.
+- Headless verification (no browser/session needed): bundle a script with esbuild in the `api` container (`resolveDir` = `/app/artifacts/api-server` so workspace deps resolve) and run it with `node`; it exercises the contract rules, evidence-ownership rejection, the typed generator outcome, blocked-report persistence and `GetScanReportResponse.parse` of the serialised payload. The report UI (`scan-report.tsx`) needs a signed-in session and is not covered by that script.
