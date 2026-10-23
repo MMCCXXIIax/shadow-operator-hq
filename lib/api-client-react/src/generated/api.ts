@@ -25,6 +25,7 @@ import type {
   EvidenceUpdate,
   FollowUp,
   HealthStatus,
+  InstagramStatus,
   Lead,
   LeadInput,
   LeadStats,
@@ -32,6 +33,8 @@ import type {
   ListLeadsParams,
   LogInRequest,
   LogoutSuccess,
+  ScanInput,
+  ScanJob,
   SignUpRequest,
   SignupAvailability,
 } from "./api.schemas";
@@ -1706,3 +1709,391 @@ export const useCompleteFollowup = <
 > => {
   return useMutation(getCompleteFollowupMutationOptions(options));
 };
+
+/**
+ * @summary List the operator's creator intelligence scans
+ */
+export const getListScansUrl = () => {
+  return `/api/scans`;
+};
+
+export const listScans = async (options?: RequestInit): Promise<ScanJob[]> => {
+  return customFetch<ScanJob[]>(getListScansUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListScansQueryKey = () => {
+  return [`/api/scans`] as const;
+};
+
+export const getListScansQueryOptions = <
+  TData = Awaited<ReturnType<typeof listScans>>,
+  TError = ErrorType<ErrorEnvelope>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof listScans>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListScansQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listScans>>> = ({
+    signal,
+  }) => listScans({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listScans>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListScansQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listScans>>
+>;
+export type ListScansQueryError = ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary List the operator's creator intelligence scans
+ */
+
+export function useListScans<
+  TData = Awaited<ReturnType<typeof listScans>>,
+  TError = ErrorType<ErrorEnvelope>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof listScans>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListScansQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * The only input is a handle or profile URL. The scan runs the approved stage list server-side and persists its progress.
+ * @summary Start a creator intelligence scan from one handle or profile URL
+ */
+export const getCreateScanUrl = () => {
+  return `/api/scans`;
+};
+
+export const createScan = async (
+  scanInput: ScanInput,
+  options?: RequestInit,
+): Promise<ScanJob> => {
+  return customFetch<ScanJob>(getCreateScanUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(scanInput),
+  });
+};
+
+export const getCreateScanMutationOptions = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createScan>>,
+    TError,
+    { data: BodyType<ScanInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createScan>>,
+  TError,
+  { data: BodyType<ScanInput> },
+  TContext
+> => {
+  const mutationKey = ["createScan"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createScan>>,
+    { data: BodyType<ScanInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createScan(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateScanMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createScan>>
+>;
+export type CreateScanMutationBody = BodyType<ScanInput>;
+export type CreateScanMutationError = ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary Start a creator intelligence scan from one handle or profile URL
+ */
+export const useCreateScan = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createScan>>,
+    TError,
+    { data: BodyType<ScanInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createScan>>,
+  TError,
+  { data: BodyType<ScanInput> },
+  TContext
+> => {
+  return useMutation(getCreateScanMutationOptions(options));
+};
+
+/**
+ * @summary Get one scan and its persisted stage states
+ */
+export const getGetScanUrl = (id: number) => {
+  return `/api/scans/${id}`;
+};
+
+export const getScan = async (
+  id: number,
+  options?: RequestInit,
+): Promise<ScanJob> => {
+  return customFetch<ScanJob>(getGetScanUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetScanQueryKey = (id: number) => {
+  return [`/api/scans/${id}`] as const;
+};
+
+export const getGetScanQueryOptions = <
+  TData = Awaited<ReturnType<typeof getScan>>,
+  TError = ErrorType<ErrorEnvelope>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getScan>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetScanQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getScan>>> = ({
+    signal,
+  }) => getScan(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getScan>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetScanQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getScan>>
+>;
+export type GetScanQueryError = ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary Get one scan and its persisted stage states
+ */
+
+export function useGetScan<
+  TData = Awaited<ReturnType<typeof getScan>>,
+  TError = ErrorType<ErrorEnvelope>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getScan>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetScanQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Re-run a scan that was blocked or failed
+ */
+export const getRetryScanUrl = (id: number) => {
+  return `/api/scans/${id}/retry`;
+};
+
+export const retryScan = async (
+  id: number,
+  options?: RequestInit,
+): Promise<ScanJob> => {
+  return customFetch<ScanJob>(getRetryScanUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getRetryScanMutationOptions = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof retryScan>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof retryScan>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["retryScan"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof retryScan>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return retryScan(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RetryScanMutationResult = NonNullable<
+  Awaited<ReturnType<typeof retryScan>>
+>;
+
+export type RetryScanMutationError = ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary Re-run a scan that was blocked or failed
+ */
+export const useRetryScan = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof retryScan>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof retryScan>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getRetryScanMutationOptions(options));
+};
+
+/**
+ * @summary Report which Instagram integration settings are present, never their values
+ */
+export const getGetInstagramStatusUrl = () => {
+  return `/api/instagram/status`;
+};
+
+export const getInstagramStatus = async (
+  options?: RequestInit,
+): Promise<InstagramStatus> => {
+  return customFetch<InstagramStatus>(getGetInstagramStatusUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetInstagramStatusQueryKey = () => {
+  return [`/api/instagram/status`] as const;
+};
+
+export const getGetInstagramStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof getInstagramStatus>>,
+  TError = ErrorType<ErrorEnvelope>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getInstagramStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetInstagramStatusQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getInstagramStatus>>
+  > = ({ signal }) => getInstagramStatus({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getInstagramStatus>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetInstagramStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getInstagramStatus>>
+>;
+export type GetInstagramStatusQueryError = ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary Report which Instagram integration settings are present, never their values
+ */
+
+export function useGetInstagramStatus<
+  TData = Awaited<ReturnType<typeof getInstagramStatus>>,
+  TError = ErrorType<ErrorEnvelope>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getInstagramStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetInstagramStatusQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}

@@ -475,6 +475,132 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
 
+  /scans:
+    get:
+      operationId: listScans
+      tags: [scans]
+      summary: List the operator's creator intelligence scans
+      responses:
+        "200":
+          description: Newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScanJob"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    post:
+      operationId: createScan
+      tags: [scans]
+      summary: Start a creator intelligence scan from one handle or profile URL
+      description: The only input is a handle or profile URL. The scan runs the approved stage list server-side and persists its progress.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScanInput"
+      responses:
+        "201":
+          description: Scan created and queued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanJob"
+        "400":
+          description: The handle or URL is not usable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /scans/{id}:
+    get:
+      operationId: getScan
+      tags: [scans]
+      summary: Get one scan and its persisted stage states
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Scan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanJob"
+        "404":
+          description: Not found for this user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /scans/{id}/retry:
+    post:
+      operationId: retryScan
+      tags: [scans]
+      summary: Re-run a scan that was blocked or failed
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Scan reset and queued again
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanJob"
+        "404":
+          description: Not found for this user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: The scan is already complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /instagram/status:
+    get:
+      operationId: getInstagramStatus
+      tags: [instagram]
+      summary: Report which Instagram integration settings are present, never their values
+      responses:
+        "200":
+          description: Configuration status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InstagramStatus"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
 components:
   schemas:
     HealthStatus:
@@ -929,3 +1055,135 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/StatusCount"
+
+    ScanJobStatus:
+      type: string
+      enum:
+        - queued
+        - running
+        - blocked
+        - failed
+        - completed
+
+    ScanStageStatus:
+      type: string
+      enum:
+        - pending
+        - running
+        - done
+        - failed
+        - skipped
+
+    ScanStage:
+      type: object
+      required: [key, label, status]
+      properties:
+        key:
+          type: string
+          enum:
+            - resolve_profile
+            - collect_evidence
+            - analyze_signals
+            - monetization_gap
+            - product_concepts
+            - outreach_draft
+            - report_ready
+        label:
+          type: string
+        status:
+          $ref: "#/components/schemas/ScanStageStatus"
+        detail:
+          type: ["string", "null"]
+
+    ScanInput:
+      type: object
+      required: [handle]
+      properties:
+        handle:
+          type: string
+          minLength: 1
+
+    ScanJob:
+      type: object
+      required:
+        - id
+        - userId
+        - leadId
+        - input
+        - normalizedHandle
+        - status
+        - currentStage
+        - stages
+        - attempt
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        leadId:
+          type: ["integer", "null"]
+        input:
+          type: string
+        normalizedHandle:
+          type: string
+        status:
+          $ref: "#/components/schemas/ScanJobStatus"
+        currentStage:
+          type: ["string", "null"]
+        stages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScanStage"
+        errorCode:
+          type: ["string", "null"]
+        errorMessage:
+          type: ["string", "null"]
+        attempt:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    InstagramConfigCheck:
+      type: object
+      required: [name, present, description]
+      properties:
+        name:
+          type: string
+        present:
+          type: boolean
+        description:
+          type: string
+
+    InstagramStatus:
+      type: object
+      required:
+        - configured
+        - checks
+        - graphApiVersion
+        - commentAccess
+        - commentAccessNote
+        - nextStep
+      properties:
+        configured:
+          type: boolean
+        checks:
+          type: array
+          items:
+            $ref: "#/components/schemas/InstagramConfigCheck"
+        graphApiVersion:
+          type: string
+        commentAccess:
+          type: string
+          enum:
+            - unsupported
+            - own_account_only
+        commentAccessNote:
+          type: string
+        nextStep:
+          type: string

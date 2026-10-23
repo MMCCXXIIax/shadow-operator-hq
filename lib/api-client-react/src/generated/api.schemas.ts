@@ -293,6 +293,95 @@ export interface LeadStats {
   statusBreakdown: StatusCount[];
 }
 
+export type ScanJobStatus = (typeof ScanJobStatus)[keyof typeof ScanJobStatus];
+
+export const ScanJobStatus = {
+  queued: "queued",
+  running: "running",
+  blocked: "blocked",
+  failed: "failed",
+  completed: "completed",
+} as const;
+
+export type ScanStageStatus =
+  (typeof ScanStageStatus)[keyof typeof ScanStageStatus];
+
+export const ScanStageStatus = {
+  pending: "pending",
+  running: "running",
+  done: "done",
+  failed: "failed",
+  skipped: "skipped",
+} as const;
+
+export type ScanStageKey = (typeof ScanStageKey)[keyof typeof ScanStageKey];
+
+export const ScanStageKey = {
+  resolve_profile: "resolve_profile",
+  collect_evidence: "collect_evidence",
+  analyze_signals: "analyze_signals",
+  monetization_gap: "monetization_gap",
+  product_concepts: "product_concepts",
+  outreach_draft: "outreach_draft",
+  report_ready: "report_ready",
+} as const;
+
+export interface ScanStage {
+  key: ScanStageKey;
+  label: string;
+  status: ScanStageStatus;
+  /** @nullable */
+  detail?: string | null;
+}
+
+export interface ScanInput {
+  /** @minLength 1 */
+  handle: string;
+}
+
+export interface ScanJob {
+  id: number;
+  userId: string;
+  /** @nullable */
+  leadId: number | null;
+  input: string;
+  normalizedHandle: string;
+  status: ScanJobStatus;
+  /** @nullable */
+  currentStage: string | null;
+  stages: ScanStage[];
+  /** @nullable */
+  errorCode?: string | null;
+  /** @nullable */
+  errorMessage?: string | null;
+  attempt: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InstagramConfigCheck {
+  name: string;
+  present: boolean;
+  description: string;
+}
+
+export type InstagramStatusCommentAccess =
+  (typeof InstagramStatusCommentAccess)[keyof typeof InstagramStatusCommentAccess];
+
+export const InstagramStatusCommentAccess = {
+  unsupported: "unsupported",
+  own_account_only: "own_account_only",
+} as const;
+
+export interface InstagramStatus {
+  configured: boolean;
+  checks: InstagramConfigCheck[];
+  graphApiVersion: string;
+  commentAccess: InstagramStatusCommentAccess;
+  commentAccessNote: string;
+  nextStep: string;
+}
+
 export type ListLeadsParams = {
   search?: string;
   niche?: string;

@@ -575,3 +575,141 @@ export const CompleteFollowupResponse = zod.object({
   leadEmail: zod.string().nullish(),
   leadInstagramHandle: zod.string().nullish(),
 });
+
+/**
+ * @summary List the operator's creator intelligence scans
+ */
+export const ListScansResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.string(),
+  leadId: zod.number().nullable(),
+  input: zod.string(),
+  normalizedHandle: zod.string(),
+  status: zod.enum(["queued", "running", "blocked", "failed", "completed"]),
+  currentStage: zod.string().nullable(),
+  stages: zod.array(
+    zod.object({
+      key: zod.enum([
+        "resolve_profile",
+        "collect_evidence",
+        "analyze_signals",
+        "monetization_gap",
+        "product_concepts",
+        "outreach_draft",
+        "report_ready",
+      ]),
+      label: zod.string(),
+      status: zod.enum(["pending", "running", "done", "failed", "skipped"]),
+      detail: zod.string().nullish(),
+    }),
+  ),
+  errorCode: zod.string().nullish(),
+  errorMessage: zod.string().nullish(),
+  attempt: zod.number(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+export const ListScansResponse = zod.array(ListScansResponseItem);
+
+/**
+ * The only input is a handle or profile URL. The scan runs the approved stage list server-side and persists its progress.
+ * @summary Start a creator intelligence scan from one handle or profile URL
+ */
+
+export const CreateScanBody = zod.object({
+  handle: zod.string().min(1),
+});
+
+/**
+ * @summary Get one scan and its persisted stage states
+ */
+export const GetScanParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetScanResponse = zod.object({
+  id: zod.number(),
+  userId: zod.string(),
+  leadId: zod.number().nullable(),
+  input: zod.string(),
+  normalizedHandle: zod.string(),
+  status: zod.enum(["queued", "running", "blocked", "failed", "completed"]),
+  currentStage: zod.string().nullable(),
+  stages: zod.array(
+    zod.object({
+      key: zod.enum([
+        "resolve_profile",
+        "collect_evidence",
+        "analyze_signals",
+        "monetization_gap",
+        "product_concepts",
+        "outreach_draft",
+        "report_ready",
+      ]),
+      label: zod.string(),
+      status: zod.enum(["pending", "running", "done", "failed", "skipped"]),
+      detail: zod.string().nullish(),
+    }),
+  ),
+  errorCode: zod.string().nullish(),
+  errorMessage: zod.string().nullish(),
+  attempt: zod.number(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Re-run a scan that was blocked or failed
+ */
+export const RetryScanParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const RetryScanResponse = zod.object({
+  id: zod.number(),
+  userId: zod.string(),
+  leadId: zod.number().nullable(),
+  input: zod.string(),
+  normalizedHandle: zod.string(),
+  status: zod.enum(["queued", "running", "blocked", "failed", "completed"]),
+  currentStage: zod.string().nullable(),
+  stages: zod.array(
+    zod.object({
+      key: zod.enum([
+        "resolve_profile",
+        "collect_evidence",
+        "analyze_signals",
+        "monetization_gap",
+        "product_concepts",
+        "outreach_draft",
+        "report_ready",
+      ]),
+      label: zod.string(),
+      status: zod.enum(["pending", "running", "done", "failed", "skipped"]),
+      detail: zod.string().nullish(),
+    }),
+  ),
+  errorCode: zod.string().nullish(),
+  errorMessage: zod.string().nullish(),
+  attempt: zod.number(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Report which Instagram integration settings are present, never their values
+ */
+export const GetInstagramStatusResponse = zod.object({
+  configured: zod.boolean(),
+  checks: zod.array(
+    zod.object({
+      name: zod.string(),
+      present: zod.boolean(),
+      description: zod.string(),
+    }),
+  ),
+  graphApiVersion: zod.string(),
+  commentAccess: zod.enum(["unsupported", "own_account_only"]),
+  commentAccessNote: zod.string(),
+  nextStep: zod.string(),
+});

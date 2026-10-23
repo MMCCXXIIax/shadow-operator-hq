@@ -8,6 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import Leads from "@/pages/leads";
 import LeadDetail from "@/pages/lead-detail";
 import NewLead from "@/pages/new-lead";
+import ScanDetail from "@/pages/scan-detail";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import { OnboardingModal } from "@/components/onboarding";
@@ -69,6 +70,7 @@ function Router() {
           <Route path="/leads" component={Leads} />
           <Route path="/leads/new" component={NewLead} />
           <Route path="/leads/:id" component={LeadDetail} />
+          <Route path="/scans/:id" component={ScanDetail} />
           <Route component={NotFound} />
         </Switch>
       </AppLayout>

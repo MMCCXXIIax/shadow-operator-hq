@@ -1,4 +1,5 @@
-import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./auth";
@@ -18,6 +19,10 @@ export const leadsTable = pgTable("leads", {
 
   // Creator profile (optional — only for creator-outreach leads)
   instagramHandle: text("instagram_handle"),
+  // Stable platform account id, recorded once a scan resolves the profile.
+  // Uniqueness is per owner (see the partial index below) so a renamed handle
+  // cannot create a second creator record.
+  instagramUserId: text("instagram_user_id"),
   niche: text("niche"),
   subNiche: text("sub_niche"),
   estFollowers: text("est_followers"),
@@ -36,7 +41,11 @@ export const leadsTable = pgTable("leads", {
 
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-});
+}, (table) => [
+  uniqueIndex("leads_user_instagram_user_id_idx")
+    .on(table.userId, table.instagramUserId)
+    .where(sql`instagram_user_id IS NOT NULL`),
+]);
 
 export const insertLeadSchema = createInsertSchema(leadsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertLead = z.infer<typeof insertLeadSchema>;

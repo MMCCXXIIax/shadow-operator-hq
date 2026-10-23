@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Phone, Target, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FollowUpCard } from "@/components/follow-up-card";
+import { NewScanPanel } from "@/components/new-scan-panel";
 import { AnimatePresence, motion } from "framer-motion";
 
 function FollowUpColumn({
@@ -90,6 +91,8 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      <NewScanPanel />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
